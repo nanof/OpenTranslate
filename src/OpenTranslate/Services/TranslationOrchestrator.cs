@@ -61,6 +61,12 @@ public sealed class TranslationOrchestrator
                 return;
             }
 
+            if (fromShortcut)
+            {
+                await TryShowTooltipPendingAsync(targetWindow, targetControl, settings.TooltipFontSize)
+                    .ConfigureAwait(false);
+            }
+
             var source = await ResolveSourceTextAsync(fromShortcut, targetWindow, targetControl, clipboardAlreadyUpdated)
                 .ConfigureAwait(false);
 
@@ -69,6 +75,11 @@ public sealed class TranslationOrchestrator
                 Fail("No selected text or clipboard content to translate.");
                 return;
             }
+
+            if (source.IsEditable)
+                await CloseTooltipIfOpenAsync().ConfigureAwait(false);
+            else
+                await ShowTooltipPendingAsync(settings.TooltipFontSize).ConfigureAwait(false);
 
             var translated = await _translationClient
                 .TranslateAsync(source.Text, settings)
@@ -266,7 +277,7 @@ public sealed class TranslationOrchestrator
         {
             if (!isEditable)
             {
-                TranslationTooltipService.Show(
+                TranslationTooltipService.Update(
                     TextFormattingHelper.NormalizeForTranslation(translated),
                     tooltipFontSize);
                 return;
@@ -319,8 +330,45 @@ public sealed class TranslationOrchestrator
 
     private void SetStatus(string message) => StatusChanged?.Invoke(this, message);
 
+    private async Task TryShowTooltipPendingAsync(
+        nint targetWindow,
+        nint targetControl,
+        double tooltipFontSize)
+    {
+        await RunOnUiThreadAsync(() =>
+        {
+            var window = targetWindow != 0
+                ? targetWindow
+                : InputSimulationService.GetForegroundWindow();
+
+            var control = targetControl != 0
+                ? targetControl
+                : InputSimulationService.GetFocusedControl(window);
+
+            if (!ResolveEditability(window, control))
+                TranslationTooltipService.ShowPending(tooltipFontSize);
+
+            return Task.CompletedTask;
+        }).ConfigureAwait(false);
+    }
+
+    private static Task ShowTooltipPendingAsync(double tooltipFontSize) =>
+        RunOnUiThreadAsync(() =>
+        {
+            TranslationTooltipService.ShowPending(tooltipFontSize);
+            return Task.CompletedTask;
+        });
+
+    private static Task CloseTooltipIfOpenAsync() =>
+        RunOnUiThreadAsync(() =>
+        {
+            TranslationTooltipService.CloseIfOpen();
+            return Task.CompletedTask;
+        });
+
     private void Fail(string message)
     {
+        TranslationTooltipService.CloseIfOpen();
         SetStatus("Error");
         TranslationFailed?.Invoke(this, message);
     }

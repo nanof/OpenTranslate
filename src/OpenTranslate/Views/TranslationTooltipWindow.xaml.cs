@@ -9,11 +9,30 @@ public partial class TranslationTooltipWindow : Window
 {
     private bool _isClosing;
 
-    public TranslationTooltipWindow(string translation, double fontSize)
+    public TranslationTooltipWindow(string translation, double fontSize, bool isPending = false)
     {
         InitializeComponent();
-        TranslationText.Text = translation;
         TranslationText.FontSize = fontSize;
+
+        if (isPending)
+            SetPending();
+        else
+            SetTranslation(translation);
+    }
+
+    public void SetPending()
+    {
+        PendingPanel.Visibility = Visibility.Visible;
+        TranslationText.Visibility = Visibility.Collapsed;
+        CopyButton.Visibility = Visibility.Collapsed;
+    }
+
+    public void SetTranslation(string text)
+    {
+        PendingPanel.Visibility = Visibility.Collapsed;
+        TranslationText.Visibility = Visibility.Visible;
+        TranslationText.Text = text;
+        CopyButton.Visibility = Visibility.Visible;
     }
 
     protected override void OnClosing(CancelEventArgs e)

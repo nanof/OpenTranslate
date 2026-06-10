@@ -9,19 +9,66 @@ public static class TranslationTooltipService
 {
     private static TranslationTooltipWindow? _current;
 
-    public static void Show(string translation, double fontSize)
+    public static void ShowPending(double fontSize)
     {
         var dispatcher = WpfApplication.Current.Dispatcher;
         if (!dispatcher.CheckAccess())
         {
-            dispatcher.Invoke(() => Show(translation, fontSize));
+            dispatcher.Invoke(() => ShowPending(fontSize));
             return;
         }
 
         if (_current is { IsVisible: true })
+        {
+            _current.SetPending();
+            return;
+        }
+
+        OpenPending(fontSize);
+    }
+
+    public static void Update(string translation, double fontSize)
+    {
+        var dispatcher = WpfApplication.Current.Dispatcher;
+        if (!dispatcher.CheckAccess())
+        {
+            dispatcher.Invoke(() => Update(translation, fontSize));
+            return;
+        }
+
+        if (_current is { IsVisible: true })
+        {
+            _current.SetTranslation(translation);
+            return;
+        }
+
+        OpenTranslation(translation, fontSize);
+    }
+
+    public static void CloseIfOpen()
+    {
+        var dispatcher = WpfApplication.Current.Dispatcher;
+        if (!dispatcher.CheckAccess())
+        {
+            dispatcher.Invoke(CloseIfOpen);
+            return;
+        }
+
+        _current?.CloseSafely();
+    }
+
+    private static void OpenPending(double fontSize) =>
+        Open(() => new TranslationTooltipWindow(string.Empty, fontSize, isPending: true));
+
+    private static void OpenTranslation(string translation, double fontSize) =>
+        Open(() => new TranslationTooltipWindow(translation, fontSize));
+
+    private static void Open(Func<TranslationTooltipWindow> createWindow)
+    {
+        if (_current is { IsVisible: true })
             _current.CloseSafely();
 
-        var window = new TranslationTooltipWindow(translation, fontSize);
+        var window = createWindow();
         window.Closed += (_, _) =>
         {
             if (ReferenceEquals(_current, window))
