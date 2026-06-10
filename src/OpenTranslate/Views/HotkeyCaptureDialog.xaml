@@ -1,0 +1,50 @@
+<Window x:Class="OpenTranslate.Views.HotkeyCaptureDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Capturar atajo"
+        Width="320"
+        SizeToContent="Height"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="#1E1E2E"
+        PreviewKeyDown="OnPreviewKeyDown">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="Pulsa la combinación de teclas que quieres usar."
+                   Foreground="#CDD6F4"
+                   FontSize="12"
+                   TextWrapping="Wrap"
+                   Margin="0,0,0,12" />
+
+        <Border Grid.Row="1"
+                Padding="10,8"
+                Background="#313244"
+                BorderBrush="#45475A"
+                BorderThickness="1"
+                Margin="0,0,0,12">
+            <TextBlock x:Name="PreviewText"
+                       Text="Esperando…"
+                       Foreground="#89B4FA"
+                       FontSize="14"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center" />
+        </Border>
+
+        <Button Grid.Row="2"
+                Content="Cancelar"
+                HorizontalAlignment="Right"
+                Padding="12,5"
+                Background="#45475A"
+                Foreground="#CDD6F4"
+                BorderThickness="0"
+                FontSize="11"
+                Click="OnCancel" />
+    </Grid>
+</Window>

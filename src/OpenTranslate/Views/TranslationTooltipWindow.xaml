@@ -1,0 +1,69 @@
+<Window x:Class="OpenTranslate.Views.TranslationTooltipWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Topmost="True"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        MaxWidth="420"
+        KeyDown="OnKeyDown"
+        Deactivated="OnDeactivated">
+    <Border Background="#313244"
+            BorderBrush="#45475A"
+            BorderThickness="1"
+            CornerRadius="8"
+            Padding="12"
+            MaxWidth="420">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="14"
+                              ShadowDepth="2"
+                              Opacity="0.45"
+                              Color="Black" />
+        </Border.Effect>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <TextBlock Grid.Row="0"
+                       Text="Traducción"
+                       Foreground="#A6ADC8"
+                       FontSize="11"
+                       Margin="0,0,0,6" />
+
+            <TextBox Grid.Row="1"
+                     x:Name="TranslationText"
+                     IsReadOnly="True"
+                     TextWrapping="Wrap"
+                     Background="Transparent"
+                     Foreground="#CDD6F4"
+                     BorderThickness="0"
+                     FontSize="13"
+                     MaxHeight="240"
+                     VerticalScrollBarVisibility="Auto"
+                     Margin="0,0,0,10" />
+
+            <DockPanel Grid.Row="2" LastChildFill="False">
+                <TextBlock DockPanel.Dock="Left"
+                           Text="Esc o clic fuera para cerrar"
+                           Foreground="#6C7086"
+                           FontSize="10"
+                           VerticalAlignment="Center" />
+                <Button DockPanel.Dock="Right"
+                        Content="Copiar"
+                        Padding="10,4"
+                        Background="#45475A"
+                        Foreground="#CDD6F4"
+                        BorderThickness="0"
+                        FontSize="11"
+                        Cursor="Hand"
+                        Click="OnCopy" />
+            </DockPanel>
+        </Grid>
+    </Border>
+</Window>
