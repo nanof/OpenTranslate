@@ -37,7 +37,7 @@ public sealed class OpenRouterTranslationClient : IDisposable
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(settings.ApiKey))
-            throw new OpenRouterApiException(0, "Configura tu API key de OpenRouter en Ajustes.");
+            throw new OpenRouterApiException(0, "Configure your OpenRouter API key in Settings.");
 
         var model = string.IsNullOrWhiteSpace(settings.Model)
             ? AppSettings.DefaultModel
@@ -76,7 +76,7 @@ public sealed class OpenRouterTranslationClient : IDisposable
         translated = TextFormattingHelper.RestoreBlankLines(translated ?? "");
 
         if (string.IsNullOrWhiteSpace(translated))
-            throw new OpenRouterApiException(0, "OpenRouter devolvió una respuesta vacía.");
+            throw new OpenRouterApiException(0, "OpenRouter returned an empty response.");
 
         return translated;
     }
@@ -92,17 +92,17 @@ public sealed class OpenRouterTranslationClient : IDisposable
         var source = TranslationLanguages.ResolveName(sourceCode);
         var target = TranslationLanguages.ResolveName(targetCode);
         var blankLineRule =
-            $"El marcador {TextFormattingHelper.BlankLineMarker} representa una línea en blanco entre párrafos: no lo traduzcas, no lo elimines y no lo muevas.";
+            $"The marker {TextFormattingHelper.BlankLineMarker} represents a blank line between paragraphs: do not translate it, remove it, or move it.";
 
         if (settings.AutoDetectLanguage)
         {
-            return $"Detecta si el texto está en {source} o en {target}. " +
-                   $"Si está en {source}, tradúcelo al {target}. " +
-                   $"Si está en {target}, tradúcelo al {source}. " +
-                   $"Devuelve únicamente el texto traducido, sin explicaciones ni comillas. Conserva los saltos de línea. {blankLineRule}";
+            return $"Detect whether the text is in {source} or {target}. " +
+                   $"If it is in {source}, translate it to {target}. " +
+                   $"If it is in {target}, translate it to {source}. " +
+                   $"Return only the translated text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
         }
 
-        return $"Traduce del {source} al {target}. Devuelve únicamente el texto traducido, sin explicaciones ni comillas. Conserva los saltos de línea. {blankLineRule}";
+        return $"Translate from {source} to {target}. Return only the translated text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
     }
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response)
@@ -114,10 +114,10 @@ public sealed class OpenRouterTranslationClient : IDisposable
         var message = response.StatusCode switch
         {
             System.Net.HttpStatusCode.Unauthorized =>
-                "La API key de OpenRouter no es válida o ha expirado.",
+                "The OpenRouter API key is invalid or has expired.",
             System.Net.HttpStatusCode.TooManyRequests =>
-                "OpenRouter ha limitado las peticiones. Inténtalo de nuevo en unos segundos.",
-            _ => $"Error de OpenRouter ({(int)response.StatusCode}): {Truncate(body, 120)}"
+                "OpenRouter rate-limited the request. Try again in a few seconds.",
+            _ => $"OpenRouter error ({(int)response.StatusCode}): {Truncate(body, 120)}"
         };
 
         throw new OpenRouterApiException((int)response.StatusCode, message);
@@ -126,7 +126,7 @@ public sealed class OpenRouterTranslationClient : IDisposable
     private static string Truncate(string value, int maxLength)
     {
         if (string.IsNullOrWhiteSpace(value))
-            return "sin detalle";
+            return "no details";
 
         var trimmed = value.Trim();
         return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength] + "…";

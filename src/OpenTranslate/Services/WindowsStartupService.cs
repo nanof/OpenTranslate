@@ -10,12 +10,12 @@ public sealed class WindowsStartupService
     public void Apply(bool enabled)
     {
         using var key = Registry.CurrentUser.OpenSubKey(RunKeyPath, writable: true)
-            ?? throw new InvalidOperationException("No se pudo abrir la clave de inicio de Windows.");
+            ?? throw new InvalidOperationException("Could not open the Windows startup registry key.");
 
         if (enabled)
         {
             var exePath = Environment.ProcessPath
-                ?? throw new InvalidOperationException("No se pudo determinar la ruta del ejecutable.");
+                ?? throw new InvalidOperationException("Could not determine the executable path.");
             key.SetValue(AppName, $"\"{exePath}\"");
         }
         else

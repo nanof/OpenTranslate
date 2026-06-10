@@ -23,16 +23,16 @@ public sealed class TrayIconService : IDisposable
         _taskbarIcon = new TaskbarIcon
         {
             Icon = AppIconHelper.GetAppIcon(),
-            ToolTipText = "OpenTranslate — listo"
+            ToolTipText = "OpenTranslate — ready"
         };
 
-        var translateItem = new MenuItem { Header = "Traducir portapapeles ahora" };
+        var translateItem = new MenuItem { Header = "Translate clipboard now" };
         translateItem.Click += async (_, _) => await _onTranslateNow();
 
-        var settingsItem = new MenuItem { Header = "Configuración…" };
+        var settingsItem = new MenuItem { Header = "Settings…" };
         settingsItem.Click += (_, _) => _onOpenSettings();
 
-        var exitItem = new MenuItem { Header = "Salir" };
+        var exitItem = new MenuItem { Header = "Exit" };
         exitItem.Click += (_, _) => _onExit();
 
         var contextMenu = new ContextMenu();

@@ -27,7 +27,7 @@ public sealed class AppBootstrapper : IDisposable
         if (!createdNew)
         {
             System.Windows.MessageBox.Show(
-                "OpenTranslate ya está en ejecución.",
+                "OpenTranslate is already running.",
                 "OpenTranslate",
                 System.Windows.MessageBoxButton.OK,
                 System.Windows.MessageBoxImage.Information);

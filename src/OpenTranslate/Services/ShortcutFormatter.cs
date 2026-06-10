@@ -15,12 +15,12 @@ public static class ShortcutFormatter
         if (shortcut.Alt)
             parts.Add("Alt");
         if (shortcut.Shift)
-            parts.Add("Mayús");
+            parts.Add("Shift");
 
         parts.Add(FormatKey((Keys)shortcut.KeyCode));
 
         var combo = string.Join("+", parts);
-        return shortcut.DoublePress ? $"{combo} (dos veces)" : combo;
+        return shortcut.DoublePress ? $"{combo} (twice)" : combo;
     }
 
     private static string FormatKey(Keys key) => key switch
@@ -28,17 +28,17 @@ public static class ShortcutFormatter
         >= Keys.A and <= Keys.Z => key.ToString(),
         >= Keys.D0 and <= Keys.D9 => key.ToString()[1..],
         >= Keys.NumPad0 and <= Keys.NumPad9 => "Num" + (key - Keys.NumPad0),
-        Keys.Space => "Espacio",
-        Keys.Enter => "Intro",
+        Keys.Space => "Space",
+        Keys.Enter => "Enter",
         Keys.Escape => "Esc",
         Keys.Tab => "Tab",
-        Keys.Back => "Retroceso",
-        Keys.Delete => "Supr",
+        Keys.Back => "Backspace",
+        Keys.Delete => "Delete",
         Keys.Insert => "Insert",
-        Keys.Home => "Inicio",
-        Keys.End => "Fin",
-        Keys.PageUp => "Re Pág",
-        Keys.PageDown => "Av Pág",
+        Keys.Home => "Home",
+        Keys.End => "End",
+        Keys.PageUp => "Page Up",
+        Keys.PageDown => "Page Down",
         Keys.Up => "↑",
         Keys.Down => "↓",
         Keys.Left => "←",

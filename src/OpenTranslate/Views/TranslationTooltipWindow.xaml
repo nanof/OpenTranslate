@@ -31,7 +31,7 @@
             </Grid.RowDefinitions>
 
             <TextBlock Grid.Row="0"
-                       Text="Traducción"
+                       Text="Translation"
                        Foreground="#A6ADC8"
                        FontSize="11"
                        Margin="0,0,0,6" />
@@ -50,12 +50,12 @@
 
             <DockPanel Grid.Row="2" LastChildFill="False">
                 <TextBlock DockPanel.Dock="Left"
-                           Text="Esc o clic fuera para cerrar"
+                           Text="Esc or click outside to close"
                            Foreground="#6C7086"
                            FontSize="10"
                            VerticalAlignment="Center" />
                 <Button DockPanel.Dock="Right"
-                        Content="Copiar"
+                        Content="Copy"
                         Padding="10,4"
                         Background="#45475A"
                         Foreground="#CDD6F4"

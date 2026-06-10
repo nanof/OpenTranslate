@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:converters="clr-namespace:OpenTranslate.Converters"
-        Title="OpenTranslate — Configuración"
+        Title="OpenTranslate — Settings"
         Width="400"
         SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
@@ -129,7 +129,7 @@
         </Grid.RowDefinitions>
 
         <TextBlock Grid.Row="0"
-                   Text="API key de OpenRouter"
+                   Text="OpenRouter API key"
                    Foreground="#A6ADC8"
                    Margin="0,0,0,4"
                    FontSize="11" />
@@ -143,7 +143,7 @@
                      PasswordChanged="OnApiKeyChanged" />
 
         <TextBlock Grid.Row="2"
-                   Text="Modelo"
+                   Text="Model"
                    Foreground="#A6ADC8"
                    Margin="0,0,0,4"
                    FontSize="11" />
@@ -162,7 +162,7 @@
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column="0">
-                <TextBlock Text="Idioma origen"
+                <TextBlock Text="Source language"
                            Foreground="#A6ADC8"
                            Margin="0,0,0,4"
                            FontSize="11" />
@@ -173,7 +173,7 @@
                           DisplayMemberPath="DisplayName" />
             </StackPanel>
             <StackPanel Grid.Column="2">
-                <TextBlock Text="Idioma destino"
+                <TextBlock Text="Target language"
                            Foreground="#A6ADC8"
                            Margin="0,0,0,4"
                            FontSize="11" />
@@ -193,21 +193,21 @@
                   Margin="0,0,0,10" />
 
         <CheckBox Grid.Row="6"
-                  Content="Iniciar con Windows"
+                  Content="Start with Windows"
                   IsChecked="{Binding StartWithWindows}"
                   Foreground="#CDD6F4"
                   FontSize="11"
                   Margin="0,0,0,10" />
 
         <CheckBox Grid.Row="7"
-                  Content="Sonido al empezar a traducir"
+                  Content="Play sound when translation starts"
                   IsChecked="{Binding PlaySoundOnTranslationStart}"
                   Foreground="#CDD6F4"
                   FontSize="11"
                   Margin="0,0,0,10" />
 
         <TextBlock Grid.Row="8"
-                   Text="Tamaño de fuente del tooltip"
+                   Text="Tooltip font size"
                    Foreground="#A6ADC8"
                    Margin="0,0,0,4"
                    FontSize="11" />
@@ -220,7 +220,7 @@
                  BorderBrush="#45475A" />
 
         <TextBlock Grid.Row="10"
-                   Text="Atajo de teclado"
+                   Text="Keyboard shortcut"
                    Foreground="#A6ADC8"
                    Margin="0,0,0,4"
                    FontSize="11" />
@@ -236,7 +236,7 @@
                      Foreground="#CDD6F4"
                      BorderBrush="#45475A" />
             <Button Grid.Column="1"
-                    Content="Cambiar…"
+                    Content="Change…"
                     Click="OnChangeShortcut"
                     Margin="6,0,0,0"
                     Padding="10,4"
@@ -247,7 +247,7 @@
         </Grid>
 
         <CheckBox Grid.Row="12"
-                  Content="Pulsar dos veces seguidas"
+                  Content="Press twice in a row"
                   IsChecked="{Binding ShortcutDoublePress}"
                   Foreground="#CDD6F4"
                   FontSize="11"
@@ -262,7 +262,7 @@
                    MinHeight="16" />
 
         <StackPanel Grid.Row="14" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="Probar"
+            <Button Content="Test"
                     Command="{Binding TestTranslationCommand}"
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
                     Padding="12,5"
@@ -271,7 +271,7 @@
                     Foreground="#CDD6F4"
                     BorderThickness="0"
                     FontSize="11" />
-            <Button Content="Guardar"
+            <Button Content="Save"
                     Command="{Binding SaveCommand}"
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
                     Padding="12,5"

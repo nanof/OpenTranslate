@@ -14,7 +14,7 @@ public sealed class ClipboardService
     public void SetText(string text)
     {
         if (!TrySetText(text))
-            throw new InvalidOperationException("No se pudo escribir en el portapapeles. Cierra otras apps que lo estén usando e inténtalo de nuevo.");
+            throw new InvalidOperationException("Could not write to the clipboard. Close other apps using it and try again.");
     }
 
     public string? WaitForNonEmptyText(int timeoutMs = 1000) =>

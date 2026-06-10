@@ -53,11 +53,11 @@ public sealed class TranslationOrchestrator
             if (settings.PlaySoundOnTranslationStart)
                 TranslationSoundService.PlayTranslationStarted();
 
-            SetStatus("Traduciendo…");
+            SetStatus("Translating…");
 
             if (string.IsNullOrWhiteSpace(settings.ApiKey))
             {
-                Fail("Configura tu API key de OpenRouter en Ajustes.");
+                Fail("Configure your OpenRouter API key in Settings.");
                 return;
             }
 
@@ -66,7 +66,7 @@ public sealed class TranslationOrchestrator
 
             if (source.Text is null)
             {
-                Fail("No hay texto seleccionado ni en el portapapeles para traducir.");
+                Fail("No selected text or clipboard content to translate.");
                 return;
             }
 
@@ -84,7 +84,7 @@ public sealed class TranslationOrchestrator
                 fromShortcut,
                 settings.TooltipFontSize).ConfigureAwait(false);
 
-            SetStatus("Listo");
+            SetStatus("Done");
         }
         catch (OpenRouterApiException ex)
         {
@@ -92,11 +92,11 @@ public sealed class TranslationOrchestrator
         }
         catch (TaskCanceledException)
         {
-            Fail("La traducción tardó demasiado y se canceló.");
+            Fail("Translation timed out and was cancelled.");
         }
         catch (Exception ex)
         {
-            Fail($"Error inesperado: {ex.Message}");
+            Fail($"Unexpected error: {ex.Message}");
         }
         finally
         {
@@ -291,7 +291,7 @@ public sealed class TranslationOrchestrator
             if (!_clipboardService.TrySetText(textToPaste))
             {
                 throw new InvalidOperationException(
-                    "No se pudo escribir en el portapapeles. Slack u otra app puede estar bloqueándolo; inténtalo de nuevo.");
+                    "Could not write to the clipboard. Slack or another app may be blocking it; try again.");
             }
 
             await Task.Delay(PasteDelayMs).ConfigureAwait(true);

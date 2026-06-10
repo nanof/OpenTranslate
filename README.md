@@ -1,55 +1,55 @@
 # OpenTranslate
 
-Traductor de portapapeles para Windows que usa modelos de IA vía [OpenRouter](https://openrouter.ai/).
+Windows clipboard translator powered by AI models via [OpenRouter](https://openrouter.ai/).
 
-Copia un texto con **Ctrl+C** dos veces seguidas (en menos de 500 ms) y la app traduce el contenido del portapapeles, lo sustituye por la traducción y lo pega automáticamente en la aplicación activa.
+Copy text with **Ctrl+C** twice in quick succession (within 500 ms) and the app translates the clipboard contents, replaces them with the translation, and pastes it automatically into the active application.
 
-## Requisitos
+## Requirements
 
 - Windows 10/11
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- API key de OpenRouter ([obtener aquí](https://openrouter.ai/keys))
+- OpenRouter API key ([get one here](https://openrouter.ai/keys))
 
-## Uso
+## Usage
 
-1. Ejecuta la aplicación. Aparecerá un icono **T** en la bandeja del sistema.
-2. Abre **Configuración…** (clic derecho en el icono o doble clic) e introduce tu API key.
-3. Por defecto traduce de **español** a **inglés** con el modelo `google/gemini-2.0-flash-001`.
-4. Selecciona texto en cualquier app, copia con **Ctrl+C** dos veces rápido y la traducción se pegará automáticamente.
+1. Run the application. A **T** icon appears in the system tray.
+2. Open **Settings…** (right-click the icon or double-click) and enter your API key.
+3. By default, it translates from **Spanish** to **English** using the `google/gemini-2.0-flash-001` model.
+4. Select text in any app, press **Ctrl+C** twice quickly, and the translation will be pasted automatically.
 
-También puedes usar **Traducir portapapeles ahora** desde el menú contextual para traducir manualmente lo que haya en el portapapeles.
+You can also use **Translate clipboard now** from the context menu to manually translate whatever is on the clipboard.
 
-## Configuración
+## Settings
 
-Los ajustes se guardan cifrados en:
+Settings are stored encrypted at:
 
 ```
 %AppData%\OpenTranslate\settings.dat
 ```
 
-Opciones disponibles:
+Available options:
 
-| Campo | Descripción |
+| Field | Description |
 |-------|-------------|
-| API key | Clave de OpenRouter |
-| Modelo | ID del modelo en OpenRouter (configurable) |
-| Idioma origen | Código de idioma, p. ej. `es` |
-| Idioma destino | Código de idioma, p. ej. `en` |
-| Iniciar con Windows | Registra la app en el inicio de sesión |
+| API key | OpenRouter API key |
+| Model | OpenRouter model ID (configurable) |
+| Source language | Language code, e.g. `es` |
+| Target language | Language code, e.g. `en` |
+| Start with Windows | Register the app to run at login |
 
-## Compilar y publicar
+## Build and publish
 
 ```bash
 dotnet build
 dotnet publish src/OpenTranslate/OpenTranslate.csproj -c Release -r win-x64 --self-contained false
 ```
 
-El ejecutable quedará en `src/OpenTranslate/bin/Release/net8.0-windows/win-x64/publish/`.
+The executable will be at `src/OpenTranslate/bin/Release/net8.0-windows/win-x64/publish/`.
 
-## Privacidad
+## Privacy
 
-El texto copiado se envía a la API de OpenRouter para traducirlo. No se almacena localmente más allá del portapapeles y la configuración cifrada.
+Copied text is sent to the OpenRouter API for translation. It is not stored locally beyond the clipboard and encrypted settings.
 
-## Licencia
+## License
 
 MIT

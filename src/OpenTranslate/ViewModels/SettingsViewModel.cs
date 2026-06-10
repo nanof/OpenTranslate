@@ -28,7 +28,7 @@ public partial class SettingsViewModel : ObservableObject
         TranslationLanguages.Supported;
 
     [ObservableProperty]
-    private string _autoDetectLanguageLabel = "Detectar idioma automáticamente";
+    private string _autoDetectLanguageLabel = "Auto-detect language";
 
     [ObservableProperty]
     private bool _autoDetectLanguage;
@@ -95,7 +95,7 @@ public partial class SettingsViewModel : ObservableObject
         ActivationShortcut = shortcut;
         ActivationShortcut.DoublePress = ShortcutDoublePress;
         UpdateShortcutDisplay();
-        StatusMessage = "Atajo actualizado. Guarda para aplicarlo.";
+        StatusMessage = "Shortcut updated. Save to apply.";
     }
 
     partial void OnShortcutDoublePressChanged(bool value)
@@ -123,7 +123,7 @@ public partial class SettingsViewModel : ObservableObject
     {
         var source = TranslationLanguages.ResolveName(SourceLanguage);
         var target = TranslationLanguages.ResolveName(TargetLanguage);
-        AutoDetectLanguageLabel = $"Detectar idioma automáticamente ({source} ↔ {target})";
+        AutoDetectLanguageLabel = $"Auto-detect language ({source} ↔ {target})";
     }
 
     private void UpdateShortcutDisplay() =>
@@ -134,18 +134,18 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(ApiKey))
         {
-            StatusMessage = "La API key es obligatoria para probar.";
+            StatusMessage = "An API key is required to test.";
             return;
         }
 
         IsBusy = true;
-        StatusMessage = "Probando traducción…";
+        StatusMessage = "Testing translation…";
 
         try
         {
             var settings = BuildSettingsFromViewModel();
-            var result = await _translationClient.TranslateAsync("Hola mundo", settings);
-            StatusMessage = $"Conexión correcta. Ejemplo: {result}";
+            var result = await _translationClient.TranslateAsync("Hello world", settings);
+            StatusMessage = $"Connection OK. Example: {result}";
         }
         catch (OpenRouterApiException ex)
         {
@@ -166,25 +166,25 @@ public partial class SettingsViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(SourceLanguage) || string.IsNullOrWhiteSpace(TargetLanguage))
         {
-            StatusMessage = "Indica idioma origen y destino.";
+            StatusMessage = "Specify source and target language.";
             return;
         }
 
         if (string.Equals(SourceLanguage.Trim(), TargetLanguage.Trim(), StringComparison.OrdinalIgnoreCase))
         {
-            StatusMessage = "El idioma origen y destino deben ser distintos.";
+            StatusMessage = "Source and target language must be different.";
             return;
         }
 
         if (!ActivationShortcut.IsValid)
         {
-            StatusMessage = "Configura un atajo de teclado válido.";
+            StatusMessage = "Configure a valid keyboard shortcut.";
             return;
         }
 
         if (TooltipFontSize is < 8 or > 36)
         {
-            StatusMessage = "El tamaño de fuente del tooltip debe estar entre 8 y 36.";
+            StatusMessage = "Tooltip font size must be between 8 and 36.";
             return;
         }
 
@@ -199,13 +199,13 @@ public partial class SettingsViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Ajustes guardados, pero falló el inicio con Windows: {ex.Message}";
+            StatusMessage = $"Settings saved, but Windows startup failed: {ex.Message}";
             IsBusy = false;
             SettingsSaved?.Invoke(this, EventArgs.Empty);
             return;
         }
 
-        StatusMessage = "Ajustes guardados.";
+        StatusMessage = "Settings saved.";
         IsBusy = false;
         SettingsSaved?.Invoke(this, EventArgs.Empty);
     }
