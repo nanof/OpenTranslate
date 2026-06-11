@@ -6,9 +6,16 @@ Copy text with **Ctrl+C** twice in quick succession (within 500 ms) and the app 
 
 ## Requirements
 
-- Windows 10/11
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Windows 10/11 (64-bit)
 - OpenRouter API key ([get one here](https://openrouter.ai/keys))
+
+> End users installing the release build do not need the .NET SDK.
+
+## Install
+
+Download `OpenTranslate-Setup-x.y.z.exe` from [GitHub Releases](https://github.com/nanof/OpenTranslate/releases) and run the installer.
+
+Settings are preserved across upgrades at `%AppData%\OpenTranslate\settings.dat`.
 
 ## Usage
 
@@ -41,10 +48,36 @@ Available options:
 
 ```bash
 dotnet build
-dotnet publish src/OpenTranslate/OpenTranslate.csproj -c Release -r win-x64 --self-contained false
+```
+
+### Create installer locally
+
+Requires [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) and [Inno Setup 6](https://jrsoftware.org/isinfo.php).
+
+```powershell
+.\scripts\build-installer.ps1 -Version 1.0.0
+```
+
+The installer will be at `dist/OpenTranslate-Setup-1.0.0.exe`.
+
+### Publish only (no installer)
+
+```bash
+dotnet publish src/OpenTranslate/OpenTranslate.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
 ```
 
 The executable will be at `src/OpenTranslate/bin/Release/net8.0-windows/win-x64/publish/`.
+
+### Release on GitHub
+
+Push a version tag to trigger the release workflow:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+This builds the installer and attaches it to a GitHub Release automatically.
 
 ## Privacy
 
