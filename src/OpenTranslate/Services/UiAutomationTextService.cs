@@ -65,6 +65,24 @@ public static class UiAutomationTextService
         return null;
     }
 
+    public static bool TrySetValue(nint window, nint control, string value)
+    {
+        try
+        {
+            foreach (var element in EnumerateCandidateElements(window, control))
+            {
+                if (TryApplyWithValuePattern(element, value))
+                    return true;
+            }
+        }
+        catch
+        {
+            return false;
+        }
+
+        return false;
+    }
+
     public static bool TryApplyTranslation(nint window, nint control, string translated, bool replaceAll)
     {
         if (!replaceAll || translated.Contains('\n'))

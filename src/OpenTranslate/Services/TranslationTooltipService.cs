@@ -9,22 +9,22 @@ public static class TranslationTooltipService
 {
     private static TranslationTooltipWindow? _current;
 
-    public static void ShowPending(double fontSize)
+    public static void ShowPending(double fontSize, bool spinnerOnly = false)
     {
         var dispatcher = WpfApplication.Current.Dispatcher;
         if (!dispatcher.CheckAccess())
         {
-            dispatcher.Invoke(() => ShowPending(fontSize));
+            dispatcher.Invoke(() => ShowPending(fontSize, spinnerOnly));
             return;
         }
 
         if (_current is { IsVisible: true })
         {
-            _current.SetPending();
+            _current.SetPending(spinnerOnly);
             return;
         }
 
-        OpenPending(fontSize);
+        OpenPending(fontSize, spinnerOnly);
     }
 
     public static void Update(string translation, double fontSize)
@@ -57,13 +57,15 @@ public static class TranslationTooltipService
         _current?.CloseSafely();
     }
 
-    private static void OpenPending(double fontSize) =>
-        Open(() => new TranslationTooltipWindow(string.Empty, fontSize, isPending: true));
+    private static void OpenPending(double fontSize, bool spinnerOnly) =>
+        Open(
+            () => new TranslationTooltipWindow(string.Empty, fontSize, isPending: true, spinnerOnly),
+            activate: !spinnerOnly);
 
     private static void OpenTranslation(string translation, double fontSize) =>
         Open(() => new TranslationTooltipWindow(translation, fontSize));
 
-    private static void Open(Func<TranslationTooltipWindow> createWindow)
+    private static void Open(Func<TranslationTooltipWindow> createWindow, bool activate = true)
     {
         if (_current is { IsVisible: true })
             _current.CloseSafely();
@@ -77,8 +79,11 @@ public static class TranslationTooltipService
 
         _current = window;
         PositionNearCursor(window);
+        window.ShowActivated = activate;
         window.Show();
-        window.Activate();
+
+        if (activate)
+            window.Activate();
     }
 
     private static void PositionNearCursor(WpfWindow window)

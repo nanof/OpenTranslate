@@ -8,27 +8,36 @@ namespace OpenTranslate.Views;
 public partial class TranslationTooltipWindow : Window
 {
     private bool _isClosing;
+    private bool _closeOnDeactivate = true;
 
-    public TranslationTooltipWindow(string translation, double fontSize, bool isPending = false)
+    public TranslationTooltipWindow(
+        string translation,
+        double fontSize,
+        bool isPending = false,
+        bool spinnerOnly = false)
     {
         InitializeComponent();
         TranslationText.FontSize = fontSize;
 
         if (isPending)
-            SetPending();
+            SetPending(spinnerOnly);
         else
             SetTranslation(translation);
     }
 
-    public void SetPending()
+    public void SetPending(bool spinnerOnly = false)
     {
+        _closeOnDeactivate = !spinnerOnly;
         PendingPanel.Visibility = Visibility.Visible;
+        PendingText.Visibility = spinnerOnly ? Visibility.Collapsed : Visibility.Visible;
+        SpinnerHost.Margin = spinnerOnly ? new Thickness(0) : new Thickness(0, 0, 8, 0);
         TranslationText.Visibility = Visibility.Collapsed;
         CopyButton.Visibility = Visibility.Collapsed;
     }
 
     public void SetTranslation(string text)
     {
+        _closeOnDeactivate = true;
         PendingPanel.Visibility = Visibility.Collapsed;
         TranslationText.Visibility = Visibility.Visible;
         TranslationText.Text = text;
@@ -49,7 +58,7 @@ public partial class TranslationTooltipWindow : Window
 
     private void OnDeactivated(object? sender, EventArgs e)
     {
-        if (_isClosing)
+        if (_isClosing || !_closeOnDeactivate)
             return;
 
         Dispatcher.BeginInvoke(CloseSafely);

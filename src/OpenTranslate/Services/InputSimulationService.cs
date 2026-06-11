@@ -9,9 +9,6 @@ public static class InputSimulationService
     private const int SwRestore = 9;
     private const int AsfwAny = -1;
     private const int WmPaste = 0x0318;
-    private const int EmReplaceSel = 0x040E;
-    private const int EmReplaceSelRich = 0x0432;
-
     [DllImport("user32.dll")]
     public static extern nint GetForegroundWindow();
 
@@ -79,7 +76,7 @@ public static class InputSimulationService
             if (replaceAll)
                 TextControlService.SelectAll(targetControl);
 
-            if (TryReplaceSelection(targetControl, translatedText))
+            if (TextControlService.TryReplaceSelection(targetControl, translatedText))
                 return;
 
             SendMessage(targetControl, WmPaste, 0, 0);
@@ -96,7 +93,7 @@ public static class InputSimulationService
             var focusedControl = GetFocusedControl(targetWindow);
             if (focusedControl != 0)
             {
-                if (TryReplaceSelection(focusedControl, translatedText))
+                if (TextControlService.TryReplaceSelection(focusedControl, translatedText))
                     return;
 
                 SendMessage(focusedControl, WmPaste, 0, 0);
@@ -176,30 +173,6 @@ public static class InputSimulationService
 
             if (attachedToForeground)
                 AttachThreadInput(currentThread, foregroundThread, false);
-        }
-    }
-
-    private static bool TryReplaceSelection(nint control, string text)
-    {
-        var textPtr = Marshal.StringToHGlobalUni(text);
-        try
-        {
-            var result = SendMessage(control, EmReplaceSel, 1, textPtr);
-            if (result != 0)
-                return true;
-
-            var className = GetWindowClassName(control);
-            if (className.Contains("RichEdit", StringComparison.OrdinalIgnoreCase))
-            {
-                result = SendMessage(control, EmReplaceSelRich, 1, textPtr);
-                return result != 0;
-            }
-
-            return false;
-        }
-        finally
-        {
-            Marshal.FreeHGlobal(textPtr);
         }
     }
 

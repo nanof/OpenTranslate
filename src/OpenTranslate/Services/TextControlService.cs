@@ -19,6 +19,8 @@ public static class TextControlService
     private const int EmGetSel = 0x00B0;
     private const int EmSetSel = 0x00B1;
     private const int EmGetReadonly = 0x00CF;
+    private const int EmReplaceSel = 0x040E;
+    private const int EmReplaceSelRich = 0x0432;
 
     [DllImport("user32.dll")]
     private static extern bool IsWindow(nint hWnd);
@@ -61,7 +63,7 @@ public static class TextControlService
         return (style & EsReadonly) == 0;
     }
 
-    public static TextCaptureResult? TryCapture(nint control)
+    public static TextCaptureResult? TryPeekSelection(nint control)
     {
         if (!IsTextInputControl(control))
             return null;
@@ -71,16 +73,29 @@ public static class TextControlService
             return null;
 
         var (start, end) = GetSelectionRange(control);
+        if (start == end || start < 0 || end > allText.Length || end <= start)
+            return null;
 
-        if (start != end && start >= 0 && end <= allText.Length && end > start)
+        return new TextCaptureResult
         {
-            return new TextCaptureResult
-            {
-                Text = TextFormattingHelper.NormalizeForTranslation(allText[start..end]),
-                Control = control,
-                ReplaceAll = false
-            };
-        }
+            Text = TextFormattingHelper.NormalizeForTranslation(allText[start..end]),
+            Control = control,
+            ReplaceAll = false
+        };
+    }
+
+    public static TextCaptureResult? TryCapture(nint control)
+    {
+        if (!IsTextInputControl(control))
+            return null;
+
+        var allText = GetText(control);
+        if (string.IsNullOrWhiteSpace(allText))
+            return null;
+
+        var peeked = TryPeekSelection(control);
+        if (peeked is not null)
+            return peeked;
 
         SelectAll(control);
         return new TextCaptureResult
@@ -94,14 +109,44 @@ public static class TextControlService
     public static void SelectAll(nint control) =>
         SendMessage(control, EmSetSel, 0, -1);
 
-    private static (int Start, int End) GetSelectionRange(nint control)
+    public static (int Start, int End) GetSelectionRange(nint control)
     {
         var result = SendMessage(control, EmGetSel, 0, 0);
         var value = result.ToInt64();
         return ((int)(value & 0xFFFF), (int)((value >> 16) & 0xFFFF));
     }
 
-    private static string GetText(nint control)
+    public static bool TryReplaceSelection(nint control, string text)
+    {
+        var before = GetText(control);
+        var textPtr = Marshal.StringToHGlobalUni(text);
+        try
+        {
+            _ = SendMessage(control, EmReplaceSel, 1, textPtr);
+
+            if (GetText(control) != before)
+                return true;
+
+            var className = GetWindowClassName(control);
+            if (!className.Contains("RichEdit", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            _ = SendMessage(control, EmReplaceSelRich, 1, textPtr);
+            return GetText(control) != before;
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(textPtr);
+        }
+    }
+
+    public static bool TryReplaceRange(nint control, int start, int end, string text)
+    {
+        SendMessage(control, EmSetSel, start, end);
+        return TryReplaceSelection(control, text);
+    }
+
+    public static string GetText(nint control)
     {
         var length = SendMessage(control, WmGetTextLength, 0, 0).ToInt32();
         if (length <= 0)

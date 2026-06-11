@@ -44,7 +44,7 @@ public sealed class TranslationOrchestrator
         if (!await _gate.WaitAsync(0).ConfigureAwait(false))
             return;
 
-        _keyboardHookService.Pause(); // only pause after acquiring the gate
+        _keyboardHookService.Pause();
 
         try
         {
@@ -77,9 +77,14 @@ public sealed class TranslationOrchestrator
             }
 
             if (source.IsEditable)
-                await CloseTooltipIfOpenAsync().ConfigureAwait(false);
+            {
+                if (!EditableFieldSpinnerService.IsActive)
+                    await StartInlineSpinnerAsync(source).ConfigureAwait(false);
+            }
             else
+            {
                 await ShowTooltipPendingAsync(settings.TooltipFontSize).ConfigureAwait(false);
+            }
 
             var translated = await _translationClient
                 .TranslateAsync(source.Text, settings)
@@ -124,9 +129,6 @@ public sealed class TranslationOrchestrator
     {
         return RunOnUiThreadAsync(async () =>
         {
-            if (fromShortcut)
-                await Task.Delay(ClipboardDelayMs).ConfigureAwait(true);
-
             var window = targetWindow != 0
                 ? targetWindow
                 : InputSimulationService.GetForegroundWindow();
@@ -135,19 +137,51 @@ public sealed class TranslationOrchestrator
                 ? targetControl
                 : InputSimulationService.GetFocusedControl(window);
 
-            if (control != 0)
+            if (fromShortcut)
+                TryStartInlineSpinnerEarly(window, control);
+
+            if (EditableFieldSpinnerService.IsActive)
             {
-                var captured = TextControlService.TryCapture(control);
-                if (captured is not null && !string.IsNullOrWhiteSpace(captured.Text))
+                var early = EditableFieldSpinnerService.GetCapturedSource();
+                if (!string.IsNullOrWhiteSpace(early.Text))
                 {
                     return (
-                        (string?)captured.Text,
-                        window,
-                        captured.Control,
-                        captured.ReplaceAll,
+                        early.Text,
+                        early.Window,
+                        early.Control,
+                        early.ReplaceAll,
                         false,
-                        TextControlService.IsEditable(captured.Control));
+                        true);
                 }
+            }
+
+            if (fromShortcut)
+                await Task.Delay(ClipboardDelayMs).ConfigureAwait(true);
+
+            var preferFieldContent = ShouldPreferFieldContent(window, control);
+
+            var fieldCapture = TryCaptureEditableField(window, control);
+            if (fieldCapture is not null && !string.IsNullOrWhiteSpace(fieldCapture.Text))
+                return FromFieldCapture(fieldCapture, window, control, preferFieldContent);
+
+            if (preferFieldContent)
+            {
+                if (fromShortcut)
+                {
+                    var allCapture = KeyboardTextCaptureService.TryCaptureAll(window, _clipboardService);
+                    if (allCapture is not null && !string.IsNullOrWhiteSpace(allCapture.Text))
+                    {
+                        return (
+                            (string?)allCapture.Text,
+                            window,
+                            control,
+                            true,
+                            false,
+                            true);
+                    }
+                }
+
+                return (null, window, control, false, false, true);
             }
 
             if (fromShortcut && clipboardAlreadyUpdated)
@@ -165,7 +199,7 @@ public sealed class TranslationOrchestrator
                         control,
                         false,
                         false,
-                        ResolveEditability(window, control));
+                        false);
                 }
             }
 
@@ -180,7 +214,7 @@ public sealed class TranslationOrchestrator
                         control,
                         false,
                         false,
-                        ResolveEditability(window, control));
+                        false);
                 }
             }
 
@@ -195,7 +229,7 @@ public sealed class TranslationOrchestrator
                         control,
                         false,
                         false,
-                        ResolveEditability(window, control));
+                        false);
                 }
             }
 
@@ -208,7 +242,7 @@ public sealed class TranslationOrchestrator
                     control,
                     automationCapture.ReplaceAll,
                     automationCapture.ReplaceAll,
-                    ResolveEditability(window, control));
+                    false);
             }
 
             if (fromShortcut)
@@ -222,7 +256,7 @@ public sealed class TranslationOrchestrator
                         control,
                         true,
                         false,
-                        ResolveEditability(window, control));
+                        false);
                 }
             }
             else
@@ -236,7 +270,7 @@ public sealed class TranslationOrchestrator
                         control,
                         false,
                         false,
-                        ResolveEditability(window, control));
+                        false);
                 }
 
                 var keyboardCapture = KeyboardTextCaptureService.TryCapture(window, _clipboardService);
@@ -248,13 +282,68 @@ public sealed class TranslationOrchestrator
                         control,
                         keyboardCapture.ReplaceAll,
                         false,
-                        ResolveEditability(window, control));
+                        false);
                 }
             }
 
             return (null, window, control, false, false, true);
         });
     }
+
+    private static TextCaptureResult? TryCaptureEditableField(nint window, nint control)
+    {
+        var resolvedControl = control != 0
+            ? control
+            : window != 0
+                ? InputSimulationService.GetFocusedControl(window)
+                : 0;
+
+        if (resolvedControl != 0)
+        {
+            var peeked = TextControlService.TryPeekSelection(resolvedControl);
+            if (peeked is not null)
+                return peeked;
+
+            var captured = TextControlService.TryCapture(resolvedControl);
+            if (captured is not null)
+                return captured;
+        }
+
+        var automationSelection = UiAutomationTextService.TryCaptureSelection(window, resolvedControl);
+        if (automationSelection is not null)
+            return automationSelection;
+
+        return UiAutomationTextService.TryCapture(window, resolvedControl);
+    }
+
+    private static (string? Text, nint Window, nint Control, bool ReplaceAll, bool PreferUiAutomationPaste, bool IsEditable)
+        FromFieldCapture(TextCaptureResult capture, nint window, nint control, bool isEditable) =>
+        (
+            capture.Text,
+            window,
+            capture.Control != 0 ? capture.Control : control,
+            capture.ReplaceAll,
+            false,
+            isEditable);
+
+    private void TryStartInlineSpinnerEarly(nint window, nint control)
+    {
+        if (!ShouldPreferFieldContent(window, control))
+            return;
+
+        var fieldCapture = TryCaptureEditableField(window, control);
+        if (fieldCapture is null || string.IsNullOrWhiteSpace(fieldCapture.Text))
+            return;
+
+        EditableFieldSpinnerService.TryStart(
+            window,
+            fieldCapture.Control != 0 ? fieldCapture.Control : control,
+            fieldCapture.Text,
+            fieldCapture.ReplaceAll);
+    }
+
+    private static bool ShouldPreferFieldContent(nint window, nint control) =>
+        ResolveEditability(window, control);
 
     private static bool ResolveEditability(nint window, nint control)
     {
@@ -283,6 +372,16 @@ public sealed class TranslationOrchestrator
                 return;
             }
 
+            var textToPaste = TextFormattingHelper.NormalizeForTranslation(translated);
+
+            if (EditableFieldSpinnerService.IsActive)
+            {
+                EditableFieldSpinnerService.Complete(textToPaste);
+                return;
+            }
+
+            TranslationTooltipService.CloseIfOpen();
+
             var pasteWindow = fromShortcut && targetWindow != 0
                 ? targetWindow
                 : InputSimulationService.GetForegroundWindow();
@@ -296,8 +395,6 @@ public sealed class TranslationOrchestrator
             {
                 return;
             }
-
-            var textToPaste = TextFormattingHelper.NormalizeForTranslation(translated);
 
             if (!_clipboardService.TrySetText(textToPaste))
             {
@@ -345,7 +442,7 @@ public sealed class TranslationOrchestrator
                 ? targetControl
                 : InputSimulationService.GetFocusedControl(window);
 
-            if (!ResolveEditability(window, control))
+            if (!ShouldPreferFieldContent(window, control))
                 TranslationTooltipService.ShowPending(tooltipFontSize);
 
             return Task.CompletedTask;
@@ -359,15 +456,22 @@ public sealed class TranslationOrchestrator
             return Task.CompletedTask;
         });
 
-    private static Task CloseTooltipIfOpenAsync() =>
+    private static Task StartInlineSpinnerAsync(
+        (string? Text, nint Window, nint Control, bool ReplaceAll, bool PreferUiAutomationPaste, bool IsEditable) source) =>
         RunOnUiThreadAsync(() =>
         {
             TranslationTooltipService.CloseIfOpen();
+            EditableFieldSpinnerService.TryStart(
+                source.Window,
+                source.Control,
+                source.Text!,
+                source.ReplaceAll);
             return Task.CompletedTask;
         });
 
     private void Fail(string message)
     {
+        EditableFieldSpinnerService.Restore();
         TranslationTooltipService.CloseIfOpen();
         SetStatus("Error");
         TranslationFailed?.Invoke(this, message);
