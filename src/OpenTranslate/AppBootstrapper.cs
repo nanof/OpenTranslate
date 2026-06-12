@@ -13,7 +13,7 @@ public sealed class AppBootstrapper : IDisposable
     private readonly Mutex? _mutex;
     private readonly bool _initialized;
     private readonly SecureSettingsStore? _settingsStore;
-    private readonly OpenRouterTranslationClient? _translationClient;
+    private readonly TranslationClient? _translationClient;
     private readonly ClipboardService? _clipboardService;
     private readonly KeyboardHookService? _keyboardHookService;
     private readonly TranslationOrchestrator? _translationOrchestrator;
@@ -37,7 +37,7 @@ public sealed class AppBootstrapper : IDisposable
 
         _initialized = true;
         _settingsStore = new SecureSettingsStore();
-        _translationClient = new OpenRouterTranslationClient();
+        _translationClient = new TranslationClient();
         _clipboardService = new ClipboardService();
         _keyboardHookService = new KeyboardHookService();
         _startupService = new WindowsStartupService();

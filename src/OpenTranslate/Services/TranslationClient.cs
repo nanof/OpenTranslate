@@ -7,7 +7,7 @@ using OpenTranslate.Models;
 
 namespace OpenTranslate.Services;
 
-public sealed class OpenRouterTranslationClient : IDisposable
+public sealed class TranslationClient : IDisposable
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -16,19 +16,20 @@ public sealed class OpenRouterTranslationClient : IDisposable
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
-    private readonly HttpClient _httpClient;
+    private readonly HttpClient _openRouterClient;
+    private readonly HttpClient _openAiClient;
 
-    public OpenRouterTranslationClient()
+    public TranslationClient()
     {
-        _httpClient = new HttpClient
-        {
-            BaseAddress = new Uri("https://openrouter.ai/api/v1/"),
-            Timeout = TimeSpan.FromSeconds(60)
-        };
-        _httpClient.DefaultRequestHeaders.Accept.Add(
-            new MediaTypeWithQualityHeaderValue("application/json"));
-        _httpClient.DefaultRequestHeaders.Add("HTTP-Referer", "https://github.com/OpenTranslate");
-        _httpClient.DefaultRequestHeaders.Add("X-Title", "OpenTranslate");
+        _openRouterClient = CreateClient(
+            "https://openrouter.ai/api/v1/",
+            configureHeaders: client =>
+            {
+                client.DefaultRequestHeaders.Add("HTTP-Referer", "https://github.com/nanof/OpenTranslate");
+                client.DefaultRequestHeaders.Add("X-Title", "OpenTranslate");
+            });
+
+        _openAiClient = CreateClient("https://api.openai.com/v1/");
     }
 
     public async Task<string> TranslateAsync(
@@ -36,13 +37,12 @@ public sealed class OpenRouterTranslationClient : IDisposable
         AppSettings settings,
         CancellationToken cancellationToken = default)
     {
+        var provider = settings.Provider;
+
         if (string.IsNullOrWhiteSpace(settings.ApiKey))
-            throw new OpenRouterApiException(0, "Configure your OpenRouter API key in Settings.");
+            throw new TranslationApiException(0, TranslationProviders.GetApiKeyMissingMessage(provider));
 
-        var model = string.IsNullOrWhiteSpace(settings.Model)
-            ? AppSettings.DefaultModel
-            : settings.Model.Trim();
-
+        var model = settings.GetEffectiveModel();
         var protectedText = TextFormattingHelper.ProtectBlankLines(text);
         var systemPrompt = BuildSystemPrompt(settings);
 
@@ -64,21 +64,36 @@ public sealed class OpenRouterTranslationClient : IDisposable
             ]
         };
 
+        var httpClient = provider == TranslationProvider.OpenAi ? _openAiClient : _openRouterClient;
+
         using var request = new HttpRequestMessage(HttpMethod.Post, "chat/completions");
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey.Trim());
         request.Content = JsonContent.Create(requestBody, options: JsonOptions);
 
-        using var response = await _httpClient.SendAsync(request, cancellationToken);
-        await EnsureSuccessAsync(response);
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        await EnsureSuccessAsync(response, provider);
 
         var payload = await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(JsonOptions, cancellationToken);
         var translated = payload?.Choices?.FirstOrDefault()?.Message?.Content;
         translated = TextFormattingHelper.RestoreBlankLines(translated ?? "");
 
         if (string.IsNullOrWhiteSpace(translated))
-            throw new OpenRouterApiException(0, "OpenRouter returned an empty response.");
+            throw new TranslationApiException(0, TranslationProviders.GetEmptyResponseMessage(provider));
 
         return translated;
+    }
+
+    private static HttpClient CreateClient(string baseAddress, Action<HttpClient>? configureHeaders = null)
+    {
+        var client = new HttpClient
+        {
+            BaseAddress = new Uri(baseAddress),
+            Timeout = TimeSpan.FromSeconds(60)
+        };
+        client.DefaultRequestHeaders.Accept.Add(
+            new MediaTypeWithQualityHeaderValue("application/json"));
+        configureHeaders?.Invoke(client);
+        return client;
     }
 
     private static string BuildSystemPrompt(AppSettings settings)
@@ -105,7 +120,7 @@ public sealed class OpenRouterTranslationClient : IDisposable
         return $"Translate from {source} to {target}. Return only the translated text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
     }
 
-    private static async Task EnsureSuccessAsync(HttpResponseMessage response)
+    private static async Task EnsureSuccessAsync(HttpResponseMessage response, TranslationProvider provider)
     {
         if (response.IsSuccessStatusCode)
             return;
@@ -114,13 +129,13 @@ public sealed class OpenRouterTranslationClient : IDisposable
         var message = response.StatusCode switch
         {
             System.Net.HttpStatusCode.Unauthorized =>
-                "The OpenRouter API key is invalid or has expired.",
+                TranslationProviders.GetInvalidApiKeyMessage(provider),
             System.Net.HttpStatusCode.TooManyRequests =>
-                "OpenRouter rate-limited the request. Try again in a few seconds.",
-            _ => $"OpenRouter error ({(int)response.StatusCode}): {Truncate(body, 120)}"
+                TranslationProviders.GetRateLimitMessage(provider),
+            _ => TranslationProviders.GetErrorMessage(provider, (int)response.StatusCode, Truncate(body, 120))
         };
 
-        throw new OpenRouterApiException((int)response.StatusCode, message);
+        throw new TranslationApiException((int)response.StatusCode, message);
     }
 
     private static string Truncate(string value, int maxLength)
@@ -132,7 +147,11 @@ public sealed class OpenRouterTranslationClient : IDisposable
         return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength] + "…";
     }
 
-    public void Dispose() => _httpClient.Dispose();
+    public void Dispose()
+    {
+        _openRouterClient.Dispose();
+        _openAiClient.Dispose();
+    }
 
     private sealed class ChatCompletionRequest
     {

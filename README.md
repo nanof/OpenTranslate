@@ -1,13 +1,13 @@
 # OpenTranslate
 
-Windows clipboard translator powered by AI models via [OpenRouter](https://openrouter.ai/).
+Windows clipboard translator powered by AI models via [OpenRouter](https://openrouter.ai/) or [OpenAI](https://platform.openai.com/).
 
 Copy text with **Ctrl+C** twice in quick succession (within 500 ms) and the app translates the clipboard contents, replaces them with the translation, and pastes it automatically into the active application.
 
 ## Requirements
 
 - Windows 10/11 (64-bit)
-- OpenRouter API key ([get one here](https://openrouter.ai/keys))
+- API key from [OpenRouter](https://openrouter.ai/keys) or [OpenAI](https://platform.openai.com/api-keys)
 
 > End users installing the release build do not need the .NET SDK.
 
@@ -38,8 +38,9 @@ Available options:
 
 | Field | Description |
 |-------|-------------|
-| API key | OpenRouter API key |
-| Model | OpenRouter model ID (configurable) |
+| Provider | OpenRouter or OpenAI |
+| API key | Key for the selected provider |
+| Model | Model ID (default: `google/gemini-2.0-flash-001` on OpenRouter, `gpt-4o-mini` on OpenAI) |
 | Source language | Language code, e.g. `es` |
 | Target language | Language code, e.g. `en` |
 | Start with Windows | Register the app to run at login |
@@ -81,7 +82,7 @@ This builds the installer and attaches it to a GitHub Release automatically.
 
 ## Privacy
 
-Copied text is sent to the OpenRouter API for translation. It is not stored locally beyond the clipboard and encrypted settings.
+Copied text is sent to the configured provider (OpenRouter or OpenAI) for translation. It is not stored locally beyond the clipboard and encrypted settings.
 
 ## License
 

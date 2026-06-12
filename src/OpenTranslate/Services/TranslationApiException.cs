@@ -1,10 +1,10 @@
 namespace OpenTranslate.Services;
 
-public sealed class OpenRouterApiException : Exception
+public sealed class TranslationApiException : Exception
 {
     public int StatusCode { get; }
 
-    public OpenRouterApiException(int statusCode, string message)
+    public TranslationApiException(int statusCode, string message)
         : base(message)
     {
         StatusCode = statusCode;

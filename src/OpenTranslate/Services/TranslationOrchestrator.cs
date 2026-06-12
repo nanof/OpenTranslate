@@ -8,7 +8,7 @@ public sealed class TranslationOrchestrator
     private const int PasteDelayMs = 200;
 
     private readonly SecureSettingsStore _settingsStore;
-    private readonly OpenRouterTranslationClient _translationClient;
+    private readonly TranslationClient _translationClient;
     private readonly ClipboardService _clipboardService;
     private readonly KeyboardHookService _keyboardHookService;
     private readonly SemaphoreSlim _gate = new(1, 1);
@@ -18,7 +18,7 @@ public sealed class TranslationOrchestrator
 
     public TranslationOrchestrator(
         SecureSettingsStore settingsStore,
-        OpenRouterTranslationClient translationClient,
+        TranslationClient translationClient,
         ClipboardService clipboardService,
         KeyboardHookService keyboardHookService)
     {
@@ -57,7 +57,7 @@ public sealed class TranslationOrchestrator
 
             if (string.IsNullOrWhiteSpace(settings.ApiKey))
             {
-                Fail("Configure your OpenRouter API key in Settings.");
+                Fail(TranslationProviders.GetApiKeyMissingMessage(settings.Provider));
                 return;
             }
 
@@ -102,7 +102,7 @@ public sealed class TranslationOrchestrator
 
             SetStatus("Done");
         }
-        catch (OpenRouterApiException ex)
+        catch (TranslationApiException ex)
         {
             Fail(ex.Message);
         }
