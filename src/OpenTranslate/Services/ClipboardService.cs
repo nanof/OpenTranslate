@@ -7,6 +7,11 @@ public sealed class ClipboardService
 {
     private const int HResultClipboardBusy = unchecked((int)0x800401D0);
 
+    [DllImport("user32.dll")]
+    private static extern uint GetClipboardSequenceNumber();
+
+    public static uint GetSequenceNumber() => GetClipboardSequenceNumber();
+
     public string? TryGetText() => RunOnUiThread(TryGetTextCore);
 
     public bool TrySetText(string text) => RunOnUiThread(() => TrySetTextCore(text));

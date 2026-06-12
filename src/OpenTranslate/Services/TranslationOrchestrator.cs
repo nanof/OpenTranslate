@@ -78,8 +78,11 @@ public sealed class TranslationOrchestrator
 
             if (source.IsEditable)
             {
-                if (!EditableFieldSpinnerService.IsActive)
+                if (CanUseInlineSpinner(source.Window, source.Control)
+                    && !EditableFieldSpinnerService.IsActive)
+                {
                     await StartInlineSpinnerAsync(source).ConfigureAwait(false);
+                }
             }
             else
             {
@@ -138,7 +141,7 @@ public sealed class TranslationOrchestrator
                 : InputSimulationService.GetFocusedControl(window);
 
             if (fromShortcut)
-                TryStartInlineSpinnerEarly(window, control);
+                TryStartInlineSpinnerEarly(window, control, clipboardAlreadyUpdated);
 
             if (EditableFieldSpinnerService.IsActive)
             {
@@ -160,14 +163,38 @@ public sealed class TranslationOrchestrator
 
             var preferFieldContent = ShouldPreferFieldContent(window, control);
 
-            var fieldCapture = TryCaptureEditableField(window, control);
-            if (fieldCapture is not null && !string.IsNullOrWhiteSpace(fieldCapture.Text))
-                return FromFieldCapture(fieldCapture, window, control, preferFieldContent);
+            if (fromShortcut && clipboardAlreadyUpdated)
+            {
+                // The activating Ctrl+C may have left stale clipboard content if nothing was
+                // selected. Re-copy and use the clipboard sequence number to confirm there is a
+                // real selection before trusting it; otherwise fall through to whole-field capture.
+                var verifiedSelection = KeyboardTextCaptureService.TryCaptureSelectionStrict(window, _clipboardService);
+                if (verifiedSelection is not null && !string.IsNullOrWhiteSpace(verifiedSelection.Text))
+                {
+                    return (
+                        verifiedSelection.Text,
+                        window,
+                        control,
+                        false,
+                        false,
+                        preferFieldContent);
+                }
+            }
+            else
+            {
+                var selectionCapture = TryCaptureEditableSelection(window, control, fromShortcut);
+                if (selectionCapture is not null && !string.IsNullOrWhiteSpace(selectionCapture.Text))
+                    return FromFieldCapture(selectionCapture, window, control, preferFieldContent);
+            }
 
             if (preferFieldContent)
             {
                 if (fromShortcut)
                 {
+                    var fullFieldCapture = TryCaptureEditableFieldContent(window, control);
+                    if (fullFieldCapture is not null && !string.IsNullOrWhiteSpace(fullFieldCapture.Text))
+                        return FromFieldCapture(fullFieldCapture, window, control, true);
+
                     var allCapture = KeyboardTextCaptureService.TryCaptureAll(window, _clipboardService);
                     if (allCapture is not null && !string.IsNullOrWhiteSpace(allCapture.Text))
                     {
@@ -182,55 +209,6 @@ public sealed class TranslationOrchestrator
                 }
 
                 return (null, window, control, false, false, true);
-            }
-
-            if (fromShortcut && clipboardAlreadyUpdated)
-            {
-                var recentClipboard = await _clipboardService
-                    .GetTextAfterDelayAsync(ClipboardDelayMs)
-                    .ConfigureAwait(true)
-                    ?? _clipboardService.WaitForNonEmptyText(timeoutMs: 2000);
-
-                if (recentClipboard is not null)
-                {
-                    return (
-                        recentClipboard,
-                        window,
-                        control,
-                        false,
-                        false,
-                        false);
-                }
-            }
-
-            if (fromShortcut)
-            {
-                var automationSelection = UiAutomationTextService.TryCaptureSelection(window, control);
-                if (automationSelection is not null && !string.IsNullOrWhiteSpace(automationSelection.Text))
-                {
-                    return (
-                        (string?)automationSelection.Text,
-                        window,
-                        control,
-                        false,
-                        false,
-                        false);
-                }
-            }
-
-            if (fromShortcut)
-            {
-                var selectionCapture = KeyboardTextCaptureService.TryCaptureSelection(window, _clipboardService);
-                if (selectionCapture is not null && !string.IsNullOrWhiteSpace(selectionCapture.Text))
-                {
-                    return (
-                        (string?)selectionCapture.Text,
-                        window,
-                        control,
-                        false,
-                        false,
-                        false);
-                }
             }
 
             var automationCapture = UiAutomationTextService.TryCapture(window, control);
@@ -290,31 +268,56 @@ public sealed class TranslationOrchestrator
         });
     }
 
-    private static TextCaptureResult? TryCaptureEditableField(nint window, nint control)
+    private TextCaptureResult? TryCaptureEditableSelection(nint window, nint control, bool allowKeyboardCapture)
     {
-        var resolvedControl = control != 0
-            ? control
-            : window != 0
-                ? InputSimulationService.GetFocusedControl(window)
-                : 0;
+        var resolvedControl = ResolveFocusedControl(window, control);
 
         if (resolvedControl != 0)
         {
             var peeked = TextControlService.TryPeekSelection(resolvedControl);
             if (peeked is not null)
                 return peeked;
-
-            var captured = TextControlService.TryCapture(resolvedControl);
-            if (captured is not null)
-                return captured;
         }
 
         var automationSelection = UiAutomationTextService.TryCaptureSelection(window, resolvedControl);
         if (automationSelection is not null)
             return automationSelection;
 
+        if (!allowKeyboardCapture || window == 0)
+            return null;
+
+        var keyboardSelection = KeyboardTextCaptureService.TryCaptureSelection(window, _clipboardService);
+        if (keyboardSelection is null)
+            return null;
+
+        return new TextCaptureResult
+        {
+            Text = keyboardSelection.Text,
+            Control = resolvedControl,
+            ReplaceAll = false
+        };
+    }
+
+    private static TextCaptureResult? TryCaptureEditableFieldContent(nint window, nint control)
+    {
+        var resolvedControl = ResolveFocusedControl(window, control);
+
+        if (resolvedControl != 0)
+        {
+            var captured = TextControlService.TryCapture(resolvedControl);
+            if (captured is not null)
+                return captured;
+        }
+
         return UiAutomationTextService.TryCapture(window, resolvedControl);
     }
+
+    private static nint ResolveFocusedControl(nint window, nint control) =>
+        control != 0
+            ? control
+            : window != 0
+                ? InputSimulationService.GetFocusedControl(window)
+                : 0;
 
     private static (string? Text, nint Window, nint Control, bool ReplaceAll, bool PreferUiAutomationPaste, bool IsEditable)
         FromFieldCapture(TextCaptureResult capture, nint window, nint control, bool isEditable) =>
@@ -326,12 +329,29 @@ public sealed class TranslationOrchestrator
             false,
             isEditable);
 
-    private void TryStartInlineSpinnerEarly(nint window, nint control)
+    private void TryStartInlineSpinnerEarly(nint window, nint control, bool clipboardAlreadyUpdated)
     {
-        if (!ShouldPreferFieldContent(window, control))
+        if (!ShouldPreferFieldContent(window, control) || !CanUseInlineSpinner(window, control))
             return;
 
-        var fieldCapture = TryCaptureEditableField(window, control);
+        TextCaptureResult? fieldCapture = null;
+
+        if (clipboardAlreadyUpdated)
+        {
+            var clipboardText = _clipboardService.TryGetText();
+            if (!string.IsNullOrWhiteSpace(clipboardText))
+            {
+                fieldCapture = new TextCaptureResult
+                {
+                    Text = TextFormattingHelper.NormalizeForTranslation(clipboardText),
+                    Control = ResolveFocusedControl(window, control),
+                    ReplaceAll = false
+                };
+            }
+        }
+
+        fieldCapture ??= TryCaptureEditableSelection(window, control, allowKeyboardCapture: false);
+
         if (fieldCapture is null || string.IsNullOrWhiteSpace(fieldCapture.Text))
             return;
 
@@ -340,6 +360,12 @@ public sealed class TranslationOrchestrator
             fieldCapture.Control != 0 ? fieldCapture.Control : control,
             fieldCapture.Text,
             fieldCapture.ReplaceAll);
+    }
+
+    private static bool CanUseInlineSpinner(nint window, nint control)
+    {
+        var resolvedControl = ResolveFocusedControl(window, control);
+        return resolvedControl != 0 && TextControlService.IsTextInputControl(resolvedControl);
     }
 
     private static bool ShouldPreferFieldContent(nint window, nint control) =>
@@ -366,9 +392,20 @@ public sealed class TranslationOrchestrator
         {
             if (!isEditable)
             {
+                var tooltipWindow = fromShortcut && targetWindow != 0
+                    ? targetWindow
+                    : InputSimulationService.GetForegroundWindow();
+
+                var tooltipControl = fromShortcut && targetControl != 0
+                    ? targetControl
+                    : InputSimulationService.GetFocusedControl(tooltipWindow);
+
                 TranslationTooltipService.Update(
                     TextFormattingHelper.NormalizeForTranslation(translated),
-                    tooltipFontSize);
+                    tooltipFontSize,
+                    tooltipWindow,
+                    tooltipControl,
+                    replaceAll);
                 return;
             }
 

@@ -7,7 +7,13 @@ namespace OpenTranslate.Services;
 
 public static class TranslationTooltipService
 {
+    private const int PasteDelayMs = 200;
+
     private static TranslationTooltipWindow? _current;
+    private static string _translation = "";
+    private static nint _targetWindow;
+    private static nint _targetControl;
+    private static bool _replaceAll;
 
     public static void ShowPending(double fontSize, bool spinnerOnly = false)
     {
@@ -27,14 +33,21 @@ public static class TranslationTooltipService
         OpenPending(fontSize, spinnerOnly);
     }
 
-    public static void Update(string translation, double fontSize)
+    public static void Update(
+        string translation,
+        double fontSize,
+        nint targetWindow = 0,
+        nint targetControl = 0,
+        bool replaceAll = false)
     {
         var dispatcher = WpfApplication.Current.Dispatcher;
         if (!dispatcher.CheckAccess())
         {
-            dispatcher.Invoke(() => Update(translation, fontSize));
+            dispatcher.Invoke(() => Update(translation, fontSize, targetWindow, targetControl, replaceAll));
             return;
         }
+
+        StorePasteContext(translation, targetWindow, targetControl, replaceAll);
 
         if (_current is { IsVisible: true })
         {
@@ -43,6 +56,35 @@ public static class TranslationTooltipService
         }
 
         OpenTranslation(translation, fontSize);
+    }
+
+    public static async Task<bool> ApplyReplaceAsync()
+    {
+        var dispatcher = WpfApplication.Current.Dispatcher;
+        if (!dispatcher.CheckAccess())
+            return await dispatcher.InvokeAsync(ApplyReplaceAsync).Task.Unwrap();
+
+        if (string.IsNullOrWhiteSpace(_translation))
+            return false;
+
+        var translation = _translation;
+        var targetWindow = _targetWindow != 0
+            ? _targetWindow
+            : InputSimulationService.GetForegroundWindow();
+        var targetControl = _targetControl != 0
+            ? _targetControl
+            : InputSimulationService.GetFocusedControl(targetWindow);
+
+        var clipboard = new ClipboardService();
+        if (!clipboard.TrySetText(translation))
+            return false;
+
+        CloseIfOpen();
+
+        await Task.Delay(PasteDelayMs).ConfigureAwait(true);
+
+        InputSimulationService.PasteIntoWindow(targetWindow, targetControl, translation, _replaceAll);
+        return true;
     }
 
     public static void CloseIfOpen()
@@ -55,6 +97,14 @@ public static class TranslationTooltipService
         }
 
         _current?.CloseSafely();
+    }
+
+    private static void StorePasteContext(string translation, nint targetWindow, nint targetControl, bool replaceAll)
+    {
+        _translation = translation;
+        _targetWindow = targetWindow;
+        _targetControl = targetControl;
+        _replaceAll = replaceAll;
     }
 
     private static void OpenPending(double fontSize, bool spinnerOnly) =>

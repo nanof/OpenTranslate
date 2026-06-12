@@ -71,42 +71,36 @@ public static class InputSimulationService
             Thread.Sleep(50);
         }
 
-        if (targetControl != 0 && IsWindow(targetControl))
+        var control = targetControl != 0 && IsWindow(targetControl)
+            ? targetControl
+            : targetWindow != 0
+                ? GetFocusedControl(targetWindow)
+                : 0;
+
+        if (control != 0 && TextControlService.IsTextInputControl(control))
         {
             if (replaceAll)
-                TextControlService.SelectAll(targetControl);
+                TextControlService.SelectAll(control);
 
-            if (TextControlService.TryReplaceSelection(targetControl, translatedText))
+            if (TextControlService.TryReplaceSelection(control, translatedText))
                 return;
 
-            SendMessage(targetControl, WmPaste, 0, 0);
+            SendMessage(control, WmPaste, 0, 0);
             Thread.Sleep(80);
+            return;
         }
 
-        PasteIntoWindow(targetWindow, translatedText);
+        PasteWithKeyboard(targetWindow);
     }
 
     public static void PasteIntoWindow(nint targetWindow, string translatedText)
     {
-        if (targetWindow != 0 && IsWindow(targetWindow))
-        {
-            var focusedControl = GetFocusedControl(targetWindow);
-            if (focusedControl != 0)
-            {
-                if (TextControlService.TryReplaceSelection(focusedControl, translatedText))
-                    return;
+        _ = translatedText;
+        PasteWithKeyboard(targetWindow);
+    }
 
-                SendMessage(focusedControl, WmPaste, 0, 0);
-                Thread.Sleep(80);
-
-                if (GetForegroundWindow() == targetWindow)
-                {
-                    SendCtrlVRaw();
-                    return;
-                }
-            }
-        }
-
+    private static void PasteWithKeyboard(nint targetWindow)
+    {
         if (targetWindow != 0 && IsWindow(targetWindow))
         {
             for (var attempt = 0; attempt < 5; attempt++)
@@ -118,7 +112,7 @@ public static class InputSimulationService
             }
         }
 
-        SendKeys.SendWait("^v");
+        SendCtrlVRaw();
     }
 
     public static void RestoreFocusForCapture(nint targetWindow) =>

@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using OpenTranslate.Services;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
 namespace OpenTranslate.Views;
@@ -32,7 +33,7 @@ public partial class TranslationTooltipWindow : Window
         PendingText.Visibility = spinnerOnly ? Visibility.Collapsed : Visibility.Visible;
         SpinnerHost.Margin = spinnerOnly ? new Thickness(0) : new Thickness(0, 0, 8, 0);
         TranslationText.Visibility = Visibility.Collapsed;
-        CopyButton.Visibility = Visibility.Collapsed;
+        ActionPanel.Visibility = Visibility.Collapsed;
     }
 
     public void SetTranslation(string text)
@@ -41,7 +42,7 @@ public partial class TranslationTooltipWindow : Window
         PendingPanel.Visibility = Visibility.Collapsed;
         TranslationText.Visibility = Visibility.Visible;
         TranslationText.Text = text;
-        CopyButton.Visibility = Visibility.Visible;
+        ActionPanel.Visibility = Visibility.Visible;
     }
 
     protected override void OnClosing(CancelEventArgs e)
@@ -78,5 +79,26 @@ public partial class TranslationTooltipWindow : Window
         TranslationText.SelectAll();
         TranslationText.Copy();
         TranslationText.SelectionLength = 0;
+    }
+
+    private async void OnReplace(object sender, RoutedEventArgs e)
+    {
+        _closeOnDeactivate = false;
+        ReplaceButton.IsEnabled = false;
+        CopyButton.IsEnabled = false;
+
+        try
+        {
+            await TranslationTooltipService.ApplyReplaceAsync();
+        }
+        finally
+        {
+            if (IsVisible)
+            {
+                ReplaceButton.IsEnabled = true;
+                CopyButton.IsEnabled = true;
+                _closeOnDeactivate = true;
+            }
+        }
     }
 }

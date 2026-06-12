@@ -118,27 +118,6 @@ public static class EditableFieldSpinnerService
             return true;
         }
 
-        if (window == 0)
-            return false;
-
-        InputSimulationService.PasteIntoWindow(window, control, frame, replaceAll);
-        control = ResolveControl(window, control);
-
-        if (control != 0
-            && TextControlService.IsTextInputControl(control)
-            && TryLocateText(control, frame, replaceAll, out var pastedStart, out var pastedLength))
-        {
-            anchor = new SpinnerAnchor(
-                window,
-                control,
-                originalText,
-                replaceAll,
-                SpinnerApplyMode.Win32,
-                pastedStart,
-                pastedLength);
-            return true;
-        }
-
         return false;
     }
 
