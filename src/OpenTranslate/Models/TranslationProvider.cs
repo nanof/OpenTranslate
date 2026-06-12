@@ -6,5 +6,6 @@ namespace OpenTranslate.Models;
 public enum TranslationProvider
 {
     OpenRouter,
-    OpenAi
+    OpenAi,
+    Gemini
 }

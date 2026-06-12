@@ -18,6 +18,7 @@ public sealed class TranslationClient : IDisposable
 
     private readonly HttpClient _openRouterClient;
     private readonly HttpClient _openAiClient;
+    private readonly HttpClient _geminiClient;
 
     public TranslationClient()
     {
@@ -30,16 +31,28 @@ public sealed class TranslationClient : IDisposable
             });
 
         _openAiClient = CreateClient("https://api.openai.com/v1/");
+        _geminiClient = CreateClient("https://generativelanguage.googleapis.com/v1beta/");
     }
 
-    public async Task<string> TranslateAsync(
+    public Task<string> TranslateAsync(
         string text,
         AppSettings settings,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        settings.Provider switch
+        {
+            TranslationProvider.Gemini => TranslateWithGeminiAsync(text, settings, cancellationToken),
+            _ => TranslateWithChatCompletionsAsync(text, settings, cancellationToken)
+        };
+
+    private async Task<string> TranslateWithChatCompletionsAsync(
+        string text,
+        AppSettings settings,
+        CancellationToken cancellationToken)
     {
         var provider = settings.Provider;
 
-        if (string.IsNullOrWhiteSpace(settings.ApiKey))
+        var apiKey = settings.GetActiveApiKey();
+        if (string.IsNullOrWhiteSpace(apiKey))
             throw new TranslationApiException(0, TranslationProviders.GetApiKeyMissingMessage(provider));
 
         var model = settings.GetEffectiveModel();
@@ -67,7 +80,7 @@ public sealed class TranslationClient : IDisposable
         var httpClient = provider == TranslationProvider.OpenAi ? _openAiClient : _openRouterClient;
 
         using var request = new HttpRequestMessage(HttpMethod.Post, "chat/completions");
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", settings.ApiKey.Trim());
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
         request.Content = JsonContent.Create(requestBody, options: JsonOptions);
 
         using var response = await httpClient.SendAsync(request, cancellationToken);
@@ -81,6 +94,71 @@ public sealed class TranslationClient : IDisposable
             throw new TranslationApiException(0, TranslationProviders.GetEmptyResponseMessage(provider));
 
         return translated;
+    }
+
+    private async Task<string> TranslateWithGeminiAsync(
+        string text,
+        AppSettings settings,
+        CancellationToken cancellationToken)
+    {
+        const TranslationProvider provider = TranslationProvider.Gemini;
+
+        var apiKey = settings.GetActiveApiKey();
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new TranslationApiException(0, TranslationProviders.GetApiKeyMissingMessage(provider));
+
+        var model = NormalizeGeminiModel(settings.GetEffectiveModel());
+        var protectedText = TextFormattingHelper.ProtectBlankLines(text);
+        var systemPrompt = BuildSystemPrompt(settings);
+
+        var requestBody = new GeminiGenerateContentRequest
+        {
+            SystemInstruction = new GeminiContent
+            {
+                Parts = [new GeminiPart { Text = systemPrompt }]
+            },
+            Contents =
+            [
+                new GeminiContent
+                {
+                    Role = "user",
+                    Parts = [new GeminiPart { Text = protectedText }]
+                }
+            ]
+        };
+
+        var escapedApiKey = Uri.EscapeDataString(apiKey);
+        using var request = new HttpRequestMessage(
+            HttpMethod.Post,
+            $"models/{model}:generateContent?key={escapedApiKey}");
+        request.Content = JsonContent.Create(requestBody, options: JsonOptions);
+
+        using var response = await _geminiClient.SendAsync(request, cancellationToken);
+        await EnsureSuccessAsync(response, provider);
+
+        var payload = await response.Content.ReadFromJsonAsync<GeminiGenerateContentResponse>(JsonOptions, cancellationToken);
+        var translated = payload?.Candidates?
+            .FirstOrDefault()?
+            .Content?
+            .Parts?
+            .FirstOrDefault()?
+            .Text;
+
+        translated = TextFormattingHelper.RestoreBlankLines(translated ?? "");
+
+        if (string.IsNullOrWhiteSpace(translated))
+            throw new TranslationApiException(0, TranslationProviders.GetEmptyResponseMessage(provider));
+
+        return translated;
+    }
+
+    private static string NormalizeGeminiModel(string model)
+    {
+        var trimmed = model.Trim();
+        const string prefix = "models/";
+        return trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            ? trimmed[prefix.Length..]
+            : trimmed;
     }
 
     private static HttpClient CreateClient(string baseAddress, Action<HttpClient>? configureHeaders = null)
@@ -128,10 +206,13 @@ public sealed class TranslationClient : IDisposable
         var body = await response.Content.ReadAsStringAsync();
         var message = response.StatusCode switch
         {
-            System.Net.HttpStatusCode.Unauthorized =>
+            System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden =>
                 TranslationProviders.GetInvalidApiKeyMessage(provider),
             System.Net.HttpStatusCode.TooManyRequests =>
                 TranslationProviders.GetRateLimitMessage(provider),
+            System.Net.HttpStatusCode.BadRequest when provider == TranslationProvider.Gemini
+                && body.Contains("API key", StringComparison.OrdinalIgnoreCase) =>
+                TranslationProviders.GetInvalidApiKeyMessage(provider),
             _ => TranslationProviders.GetErrorMessage(provider, (int)response.StatusCode, Truncate(body, 120))
         };
 
@@ -151,6 +232,7 @@ public sealed class TranslationClient : IDisposable
     {
         _openRouterClient.Dispose();
         _openAiClient.Dispose();
+        _geminiClient.Dispose();
     }
 
     private sealed class ChatCompletionRequest
@@ -173,5 +255,32 @@ public sealed class TranslationClient : IDisposable
     private sealed class ChatChoice
     {
         public ChatMessage? Message { get; set; }
+    }
+
+    private sealed class GeminiGenerateContentRequest
+    {
+        public GeminiContent? SystemInstruction { get; set; }
+        public List<GeminiContent> Contents { get; set; } = [];
+    }
+
+    private sealed class GeminiGenerateContentResponse
+    {
+        public List<GeminiCandidate>? Candidates { get; set; }
+    }
+
+    private sealed class GeminiCandidate
+    {
+        public GeminiContent? Content { get; set; }
+    }
+
+    private sealed class GeminiContent
+    {
+        public string? Role { get; set; }
+        public List<GeminiPart>? Parts { get; set; }
+    }
+
+    private sealed class GeminiPart
+    {
+        public string? Text { get; set; }
     }
 }

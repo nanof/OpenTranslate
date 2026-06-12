@@ -10,7 +10,7 @@
     <Version>1.0.0</Version>
     <AssemblyName>OpenTranslate</AssemblyName>
     <Product>OpenTranslate</Product>
-    <Description>Windows clipboard translator powered by OpenRouter or OpenAI.</Description>
+    <Description>Windows clipboard translator powered by OpenRouter, OpenAI, or Gemini.</Description>
     <Copyright>Copyright © OpenTranslate contributors</Copyright>
   </PropertyGroup>
 

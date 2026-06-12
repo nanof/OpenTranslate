@@ -5,13 +5,15 @@ public static class TranslationProviders
     public static readonly IReadOnlyList<TranslationProviderOption> Options =
     [
         new() { Provider = TranslationProvider.OpenRouter, DisplayName = "OpenRouter" },
-        new() { Provider = TranslationProvider.OpenAi, DisplayName = "OpenAI" }
+        new() { Provider = TranslationProvider.OpenAi, DisplayName = "OpenAI" },
+        new() { Provider = TranslationProvider.Gemini, DisplayName = "Gemini (Google)" }
     ];
 
     public static string GetDefaultModel(TranslationProvider provider) =>
         provider switch
         {
             TranslationProvider.OpenAi => AppSettings.DefaultOpenAiModel,
+            TranslationProvider.Gemini => AppSettings.DefaultGeminiModel,
             _ => AppSettings.DefaultOpenRouterModel
         };
 
@@ -19,6 +21,7 @@ public static class TranslationProviders
         provider switch
         {
             TranslationProvider.OpenAi => "OpenAI",
+            TranslationProvider.Gemini => "Gemini",
             _ => "OpenRouter"
         };
 
@@ -26,6 +29,7 @@ public static class TranslationProviders
         provider switch
         {
             TranslationProvider.OpenAi => "OpenAI API key",
+            TranslationProvider.Gemini => "Gemini API key",
             _ => "OpenRouter API key"
         };
 
@@ -43,4 +47,26 @@ public static class TranslationProviders
 
     public static string GetEmptyResponseMessage(TranslationProvider provider) =>
         $"{GetDisplayName(provider)} returned an empty response.";
+
+    public static bool IsModelCompatibleWithProvider(string? model, TranslationProvider provider)
+    {
+        var trimmed = model?.Trim() ?? "";
+        if (string.IsNullOrWhiteSpace(trimmed))
+            return false;
+
+        return provider switch
+        {
+            TranslationProvider.Gemini =>
+                !trimmed.Contains('/')
+                && trimmed.StartsWith("gemini", StringComparison.OrdinalIgnoreCase),
+            TranslationProvider.OpenAi =>
+                !trimmed.Contains('/')
+                && (trimmed.StartsWith("gpt", StringComparison.OrdinalIgnoreCase)
+                    || trimmed.StartsWith("chatgpt", StringComparison.OrdinalIgnoreCase)
+                    || trimmed.StartsWith("o1", StringComparison.OrdinalIgnoreCase)
+                    || trimmed.StartsWith("o3", StringComparison.OrdinalIgnoreCase)
+                    || trimmed.StartsWith("o4", StringComparison.OrdinalIgnoreCase)),
+            _ => trimmed.Contains('/')
+        };
+    }
 }

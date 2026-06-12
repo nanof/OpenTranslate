@@ -2,6 +2,7 @@ using System.IO;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using OpenTranslate.Models;
 
 namespace OpenTranslate.Services;
@@ -10,7 +11,8 @@ public sealed class SecureSettingsStore
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        WriteIndented = false
+        WriteIndented = false,
+        Converters = { new JsonStringEnumConverter() }
     };
 
     private readonly string _settingsPath;
@@ -46,6 +48,18 @@ public sealed class SecureSettingsStore
 
             if (settings.TooltipFontSize <= 0)
                 settings.TooltipFontSize = AppSettings.DefaultTooltipFontSize;
+
+            if (!json.Contains("ApiKeys", StringComparison.Ordinal)
+                && json.Contains("\"ApiKey\"", StringComparison.Ordinal))
+            {
+                using var doc = JsonDocument.Parse(json);
+                if (doc.RootElement.TryGetProperty("ApiKey", out var legacyApiKey))
+                {
+                    var key = legacyApiKey.GetString();
+                    if (!string.IsNullOrWhiteSpace(key))
+                        settings.SetApiKey(settings.Provider, key);
+                }
+            }
 
             return settings;
         }

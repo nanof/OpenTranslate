@@ -14,6 +14,7 @@ public sealed class AppBootstrapper : IDisposable
     private readonly bool _initialized;
     private readonly SecureSettingsStore? _settingsStore;
     private readonly TranslationClient? _translationClient;
+    private readonly ModelCatalogService? _modelCatalog;
     private readonly ClipboardService? _clipboardService;
     private readonly KeyboardHookService? _keyboardHookService;
     private readonly TranslationOrchestrator? _translationOrchestrator;
@@ -38,6 +39,7 @@ public sealed class AppBootstrapper : IDisposable
         _initialized = true;
         _settingsStore = new SecureSettingsStore();
         _translationClient = new TranslationClient();
+        _modelCatalog = new ModelCatalogService();
         _clipboardService = new ClipboardService();
         _keyboardHookService = new KeyboardHookService();
         _startupService = new WindowsStartupService();
@@ -59,7 +61,7 @@ public sealed class AppBootstrapper : IDisposable
 
         ApplyShortcutFromSettings(_settingsStore.Load());
 
-        if (string.IsNullOrWhiteSpace(_settingsStore.Load().ApiKey))
+        if (string.IsNullOrWhiteSpace(_settingsStore.Load().GetActiveApiKey()))
         {
             System.Windows.Application.Current.Dispatcher.BeginInvoke(OpenSettings);
         }
@@ -93,6 +95,7 @@ public sealed class AppBootstrapper : IDisposable
         var viewModel = new SettingsViewModel(
             _settingsStore!,
             _translationClient!,
+            _modelCatalog!,
             _startupService!);
 
         viewModel.SettingsSaved += (_, _) =>
@@ -123,6 +126,7 @@ public sealed class AppBootstrapper : IDisposable
         _keyboardHookService.Dispose();
         _trayService!.Dispose();
         _translationClient!.Dispose();
+        _modelCatalog!.Dispose();
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();
     }
