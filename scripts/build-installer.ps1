@@ -31,10 +31,22 @@ if ($LASTEXITCODE -ne 0) {
 
 $isccCandidates = @(
     "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
-    "$env:ProgramFiles\Inno Setup 6\ISCC.exe"
+    "$env:ProgramFiles\Inno Setup 6\ISCC.exe",
+    "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe"
 )
 
 $iscc = $isccCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+
+if (-not $iscc) {
+    $innoKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Inno Setup 6_is1"
+    $innoPath = (Get-ItemProperty -Path $innoKey -ErrorAction SilentlyContinue)."Inno Setup: App Path"
+    if ($innoPath) {
+        $registryIscc = Join-Path $innoPath "ISCC.exe"
+        if (Test-Path $registryIscc) {
+            $iscc = $registryIscc
+        }
+    }
+}
 
 if (-not $iscc) {
     Write-Host ""
