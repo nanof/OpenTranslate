@@ -80,7 +80,8 @@ public sealed class TranslationOrchestrator
 
             SetStatus("Translating…");
 
-            if (string.IsNullOrWhiteSpace(settings.GetActiveApiKey()))
+            if (TranslationProviders.RequiresApiKey(settings.Provider)
+                && string.IsNullOrWhiteSpace(settings.GetActiveApiKey()))
             {
                 Fail(TranslationProviders.GetApiKeyMissingMessage(settings.Provider));
                 return;

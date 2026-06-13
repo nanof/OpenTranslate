@@ -167,6 +167,7 @@ public sealed class ModelCatalogService : IDisposable
     private static IReadOnlyList<ModelOption> GetFallbackModels(TranslationProvider provider) =>
         provider switch
         {
+            TranslationProvider.MyMemory => [],
             TranslationProvider.OpenAi =>
             [
                 new() { Id = "gpt-4o-mini", Description = "Fast and affordable" },

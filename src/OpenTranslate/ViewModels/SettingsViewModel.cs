@@ -37,6 +37,15 @@ public partial class SettingsViewModel : ObservableObject
     private string _apiKey = "";
 
     [ObservableProperty]
+    private bool _requiresApiKey = true;
+
+    [ObservableProperty]
+    private bool _supportsModelSelection = true;
+
+    [ObservableProperty]
+    private bool _supportsAutoDetect = true;
+
+    [ObservableProperty]
     private string _model = AppSettings.DefaultOpenRouterModel;
 
     [ObservableProperty]
@@ -133,6 +142,9 @@ public partial class SettingsViewModel : ObservableObject
         Provider = settings.Provider;
         SelectedProvider = AvailableProviders.First(option => option.Provider == settings.Provider);
         ApiKeyLabel = TranslationProviders.GetApiKeyLabel(settings.Provider);
+        RequiresApiKey = TranslationProviders.RequiresApiKey(settings.Provider);
+        SupportsModelSelection = TranslationProviders.SupportsModelSelection(settings.Provider);
+        SupportsAutoDetect = TranslationProviders.SupportsAutoDetect(settings.Provider);
         _isSyncingApiKey = true;
         ApiKey = GetApiKeyForProvider(settings.Provider);
         _isSyncingApiKey = false;
@@ -285,6 +297,12 @@ public partial class SettingsViewModel : ObservableObject
         }
 
         ApiKeyLabel = TranslationProviders.GetApiKeyLabel(value);
+        RequiresApiKey = TranslationProviders.RequiresApiKey(value);
+        SupportsModelSelection = TranslationProviders.SupportsModelSelection(value);
+        SupportsAutoDetect = TranslationProviders.SupportsAutoDetect(value);
+
+        if (!SupportsAutoDetect)
+            AutoDetectLanguage = false;
 
         if (!_isSyncingProvider)
         {
@@ -397,7 +415,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private async Task TestTranslationAsync()
     {
-        if (string.IsNullOrWhiteSpace(ApiKey))
+        if (RequiresApiKey && string.IsNullOrWhiteSpace(ApiKey))
         {
             StatusMessage = "An API key is required to test.";
             return;
@@ -456,7 +474,7 @@ public partial class SettingsViewModel : ObservableObject
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(Model))
+        if (SupportsModelSelection && string.IsNullOrWhiteSpace(Model))
         {
             StatusMessage = "Select a model.";
             return;

@@ -4,6 +4,7 @@ public static class TranslationProviders
 {
     public static readonly IReadOnlyList<TranslationProviderOption> Options =
     [
+        new() { Provider = TranslationProvider.MyMemory, DisplayName = "MyMemory (free, no API key)" },
         new() { Provider = TranslationProvider.OpenRouter, DisplayName = "OpenRouter" },
         new() { Provider = TranslationProvider.OpenAi, DisplayName = "OpenAI" },
         new() { Provider = TranslationProvider.Gemini, DisplayName = "Gemini (Google)" }
@@ -12,6 +13,7 @@ public static class TranslationProviders
     public static string GetDefaultModel(TranslationProvider provider) =>
         provider switch
         {
+            TranslationProvider.MyMemory => "",
             TranslationProvider.OpenAi => AppSettings.DefaultOpenAiModel,
             TranslationProvider.Gemini => AppSettings.DefaultGeminiModel,
             _ => AppSettings.DefaultOpenRouterModel
@@ -20,14 +22,25 @@ public static class TranslationProviders
     public static string GetDisplayName(TranslationProvider provider) =>
         provider switch
         {
+            TranslationProvider.MyMemory => "MyMemory",
             TranslationProvider.OpenAi => "OpenAI",
             TranslationProvider.Gemini => "Gemini",
             _ => "OpenRouter"
         };
 
+    public static bool RequiresApiKey(TranslationProvider provider) =>
+        provider != TranslationProvider.MyMemory;
+
+    public static bool SupportsModelSelection(TranslationProvider provider) =>
+        provider != TranslationProvider.MyMemory;
+
+    public static bool SupportsAutoDetect(TranslationProvider provider) =>
+        provider != TranslationProvider.MyMemory;
+
     public static string GetApiKeyLabel(TranslationProvider provider) =>
         provider switch
         {
+            TranslationProvider.MyMemory => "No API key required (free)",
             TranslationProvider.OpenAi => "OpenAI API key",
             TranslationProvider.Gemini => "Gemini API key",
             _ => "OpenRouter API key"
@@ -50,6 +63,9 @@ public static class TranslationProviders
 
     public static bool IsModelCompatibleWithProvider(string? model, TranslationProvider provider)
     {
+        if (provider == TranslationProvider.MyMemory)
+            return true;
+
         var trimmed = model?.Trim() ?? "";
         if (string.IsNullOrWhiteSpace(trimmed))
             return false;

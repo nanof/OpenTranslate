@@ -7,7 +7,7 @@ public sealed class AppSettings
     public const string DefaultGeminiModel = "gemini-3.1-flash-lite";
     public const double DefaultTooltipFontSize = 13;
 
-    public TranslationProvider Provider { get; set; } = TranslationProvider.OpenRouter;
+    public TranslationProvider Provider { get; set; } = TranslationProvider.MyMemory;
     public Dictionary<TranslationProvider, string> ApiKeys { get; set; } = [];
     public string Model { get; set; } = DefaultOpenRouterModel;
     public string SourceLanguage { get; set; } = "es";

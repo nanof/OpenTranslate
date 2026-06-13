@@ -61,7 +61,9 @@ public sealed class AppBootstrapper : IDisposable
 
         ApplyShortcutFromSettings(_settingsStore.Load());
 
-        if (string.IsNullOrWhiteSpace(_settingsStore.Load().GetActiveApiKey()))
+        var startupSettings = _settingsStore.Load();
+        if (TranslationProviders.RequiresApiKey(startupSettings.Provider)
+            && string.IsNullOrWhiteSpace(startupSettings.GetActiveApiKey()))
         {
             System.Windows.Application.Current.Dispatcher.BeginInvoke(OpenSettings);
         }
