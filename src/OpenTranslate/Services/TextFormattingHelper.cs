@@ -36,6 +36,33 @@ public static class TextFormattingHelper
         @"\[[^\]]*\]\([^)]+\)",
         RegexOptions.Compiled);
 
+    // Slack: <https://example.com|label> or <https://example.com>
+    private static readonly Regex SlackLinkRegex = new(
+        @"<(https?://[^>|]+)\|([^>\n]+)>|<(https?://[^>\n]+)>",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    private static readonly Regex StrikethroughRegex = new(
+        @"~([^~\n]+)~",
+        RegexOptions.Compiled);
+
+    private static readonly Regex MarkdownDoubleBoldRegex = new(
+        @"\*\*([^*\n]+)\*\*",
+        RegexOptions.Compiled);
+
+    private static readonly Regex MarkdownDoubleItalicRegex = new(
+        @"__([^_\n]+)__",
+        RegexOptions.Compiled);
+
+    // Slack *bold* (single asterisk; ** is handled above as Markdown bold).
+    private static readonly Regex SingleAsteriskBoldRegex = new(
+        @"(?<!\*)\*([^*\n]+)\*(?!\*)",
+        RegexOptions.Compiled);
+
+    // Slack _italic_
+    private static readonly Regex UnderscoreItalicRegex = new(
+        @"(?<![\w_])_([^_\n]+)_(?![\w_])",
+        RegexOptions.Compiled);
+
     private static readonly Regex EmailRegex = new(
         @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b",
         RegexOptions.Compiled);
@@ -109,6 +136,12 @@ public static class TextFormattingHelper
         {
             normalized = ProtectSegments(normalized, FencedCodeRegex, preserved);
             normalized = ProtectSegments(normalized, InlineCodeRegex, preserved);
+            normalized = ProtectSlackLinks(normalized, preserved);
+            normalized = ProtectDelimiterPair(normalized, StrikethroughRegex, "~", "~", preserved);
+            normalized = ProtectDelimiterPair(normalized, MarkdownDoubleBoldRegex, "**", "**", preserved);
+            normalized = ProtectDelimiterPair(normalized, MarkdownDoubleItalicRegex, "__", "__", preserved);
+            normalized = ProtectDelimiterPair(normalized, SingleAsteriskBoldRegex, "*", "*", preserved);
+            normalized = ProtectDelimiterPair(normalized, UnderscoreItalicRegex, "_", "_", preserved);
             normalized = ProtectSegments(normalized, UrlRegex, preserved);
             normalized = ProtectSegments(normalized, MarkdownLinkRegex, preserved);
             normalized = ProtectSegments(normalized, EmailRegex, preserved);
@@ -150,8 +183,9 @@ public static class TextFormattingHelper
         if (!preserveFormatAndCode)
             return "";
 
-        return " Do not translate or alter code spans (backticks), URLs, file paths, file names, " +
-               "email addresses, @mentions, #hashtags, UUIDs, placeholder tokens such as {name}, ${var}, %s, or {0}, " +
+        return " Do not translate or alter code spans (backticks), rich-text markers (such as * or _ for bold/italic), " +
+               "URLs, file paths, file names, email addresses, @mentions, #hashtags, UUIDs, " +
+               "placeholder tokens such as {name}, ${var}, %s, or {0}, " +
                "or any " +
                $"{PreservationMarkerPrefix}n{PreservationMarkerSuffix} placeholders — copy them exactly.";
     }
@@ -164,6 +198,47 @@ public static class TextFormattingHelper
             var index = preserved.Count;
             preserved.Add(match.Value);
             return FormatPreservationMarker(index);
+        });
+
+    // Keeps opening/closing delimiters intact while the inner text is translated.
+    private static string ProtectDelimiterPair(
+        string text,
+        Regex pattern,
+        string open,
+        string close,
+        List<string> preserved) =>
+        pattern.Replace(text, match =>
+        {
+            var openMarker = FormatPreservationMarker(preserved.Count);
+            preserved.Add(open);
+            var closeMarker = FormatPreservationMarker(preserved.Count);
+            preserved.Add(close);
+            return $"{openMarker}{match.Groups[1].Value}{closeMarker}";
+        });
+
+    private static string ProtectSlackLinks(string text, List<string> preserved) =>
+        SlackLinkRegex.Replace(text, match =>
+        {
+            if (match.Groups[2].Success)
+            {
+                var open = FormatPreservationMarker(preserved.Count);
+                preserved.Add("<");
+                var url = FormatPreservationMarker(preserved.Count);
+                preserved.Add(match.Groups[1].Value);
+                var pipe = FormatPreservationMarker(preserved.Count);
+                preserved.Add("|");
+                var close = FormatPreservationMarker(preserved.Count);
+                preserved.Add(">");
+                return $"{open}{url}{pipe}{match.Groups[2].Value}{close}";
+            }
+
+            var openOnly = FormatPreservationMarker(preserved.Count);
+            preserved.Add("<");
+            var urlOnly = FormatPreservationMarker(preserved.Count);
+            preserved.Add(match.Groups[3].Value);
+            var closeOnly = FormatPreservationMarker(preserved.Count);
+            preserved.Add(">");
+            return $"{openOnly}{urlOnly}{closeOnly}";
         });
 
     internal static string FormatPreservationMarker(int index) =>
