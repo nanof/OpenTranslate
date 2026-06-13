@@ -11,6 +11,37 @@
         MaxWidth="420"
         KeyDown="OnKeyDown"
         Deactivated="OnDeactivated">
+    <Window.Resources>
+        <Style x:Key="ModeOptionButton" TargetType="Button">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="4"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Left"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsMouseOver" Value="True" />
+                                    <Condition Property="FontWeight" Value="Normal" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="Bd" Property="Background" Value="#45475A" />
+                            </MultiTrigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
     <Border x:Name="RootBorder"
             Background="#313244"
             BorderBrush="#45475A"
@@ -79,32 +110,55 @@
                      MaxHeight="240"
                      VerticalScrollBarVisibility="Auto" />
 
-            <StackPanel x:Name="ActionPanel"
-                        Orientation="Horizontal"
-                        HorizontalAlignment="Right"
-                        Margin="0,8,0,0"
-                        Visibility="Collapsed">
-                <Button x:Name="ReplaceButton"
-                        Content="Replace"
+            <Grid x:Name="ActionPanel"
+                  Margin="0,8,0,0"
+                  Visibility="Collapsed">
+                <Button x:Name="ModesButton"
+                        Content="Modes ▾"
+                        HorizontalAlignment="Left"
                         Padding="8,3"
-                        Background="#89B4FA"
-                        Foreground="#1E1E2E"
-                        BorderThickness="0"
-                        FontSize="11"
-                        FontWeight="SemiBold"
-                        Cursor="Hand"
-                        Click="OnReplace" />
-                <Button x:Name="CopyButton"
-                        Content="Copy"
-                        Padding="8,3"
-                        Margin="6,0,0,0"
                         Background="#45475A"
                         Foreground="#CDD6F4"
                         BorderThickness="0"
                         FontSize="11"
                         Cursor="Hand"
-                        Click="OnCopy" />
-            </StackPanel>
+                        Visibility="Collapsed"
+                        Click="OnToggleModes" />
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right">
+                    <Button x:Name="ReplaceButton"
+                            Content="Replace"
+                            Padding="8,3"
+                            Background="#89B4FA"
+                            Foreground="#1E1E2E"
+                            BorderThickness="0"
+                            FontSize="11"
+                            FontWeight="SemiBold"
+                            Cursor="Hand"
+                            Click="OnReplace" />
+                    <Button x:Name="CopyButton"
+                            Content="Copy"
+                            Padding="8,3"
+                            Margin="6,0,0,0"
+                            Background="#45475A"
+                            Foreground="#CDD6F4"
+                            BorderThickness="0"
+                            FontSize="11"
+                            Cursor="Hand"
+                            Click="OnCopy" />
+                </StackPanel>
+            </Grid>
+
+            <Border x:Name="ModesPanelBorder"
+                    Margin="0,8,0,0"
+                    Background="#272736"
+                    BorderBrush="#45475A"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Padding="4"
+                    Visibility="Collapsed">
+                <StackPanel x:Name="ModesPanel" />
+            </Border>
         </StackPanel>
     </Border>
 </Window>

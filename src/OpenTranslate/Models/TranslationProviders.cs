@@ -37,6 +37,9 @@ public static class TranslationProviders
     public static bool SupportsAutoDetect(TranslationProvider provider) =>
         provider != TranslationProvider.MyMemory;
 
+    public static bool SupportsImprovement(TranslationProvider provider) =>
+        provider != TranslationProvider.MyMemory;
+
     public static string GetApiKeyLabel(TranslationProvider provider) =>
         provider switch
         {

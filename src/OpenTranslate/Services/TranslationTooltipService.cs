@@ -1,3 +1,4 @@
+using OpenTranslate.Models;
 using OpenTranslate.Views;
 using WpfApplication = System.Windows.Application;
 using WpfSize = System.Windows.Size;
@@ -14,6 +15,16 @@ public static class TranslationTooltipService
     private static nint _targetWindow;
     private static nint _targetControl;
     private static bool _replaceAll;
+
+    private static string _variantSourceText = "";
+    private static AppSettings? _variantSettings;
+    private static TranslationClient? _variantClient;
+    private static TextImprovementMode _activeVariantMode = TextImprovementMode.None;
+    private static readonly Dictionary<TextImprovementMode, string> _variantCache = [];
+
+    public static bool VariantsAvailable { get; private set; }
+
+    public static TextImprovementMode ActiveVariantMode => _activeVariantMode;
 
     public static void ShowPending(double fontSize, bool spinnerOnly = false)
     {
@@ -52,7 +63,7 @@ public static class TranslationTooltipService
 
         if (_current is { IsVisible: true })
         {
-            _current.SetTranslation(translation, canReplace);
+            _current.SetTranslation(translation, canReplace, VariantsAvailable, _activeVariantMode);
             // The pending spinner was shown without focus; grab focus now so the user can
             // dismiss the result with ESC.
             _current.FocusForInteraction();
@@ -60,6 +71,62 @@ public static class TranslationTooltipService
         }
 
         OpenTranslation(translation, fontSize, canReplace);
+    }
+
+    // Registers everything needed to regenerate the same source text under a different
+    // improvement mode, so the tooltip can offer a "Modes" preview. The cache is seeded
+    // with the translation already shown for the currently active mode.
+    public static void SetVariantContext(
+        string sourceText,
+        AppSettings settings,
+        TranslationClient client,
+        TextImprovementMode activeMode,
+        string activeTranslation)
+    {
+        _variantSourceText = sourceText;
+        _variantSettings = settings;
+        _variantClient = client;
+        _activeVariantMode = activeMode;
+        _variantCache.Clear();
+        _variantCache[activeMode] = activeTranslation;
+        VariantsAvailable = TranslationProviders.SupportsImprovement(settings.Provider)
+            && !string.IsNullOrWhiteSpace(sourceText);
+    }
+
+    public static void ClearVariantContext()
+    {
+        _variantSourceText = "";
+        _variantSettings = null;
+        _variantClient = null;
+        _activeVariantMode = TextImprovementMode.None;
+        _variantCache.Clear();
+        VariantsAvailable = false;
+    }
+
+    public static async Task<string> GenerateVariantAsync(
+        TextImprovementMode mode,
+        CancellationToken cancellationToken)
+    {
+        if (_variantCache.TryGetValue(mode, out var cached))
+        {
+            _activeVariantMode = mode;
+            _translation = cached;
+            return cached;
+        }
+
+        if (_variantClient is null || _variantSettings is null)
+            return _translation;
+
+        var variantSettings = _variantSettings.WithImprovementMode(mode);
+        var raw = await _variantClient
+            .TranslateAsync(_variantSourceText, variantSettings, cancellationToken)
+            .ConfigureAwait(true);
+
+        var normalized = TextFormattingHelper.NormalizeForTranslation(raw);
+        _variantCache[mode] = normalized;
+        _activeVariantMode = mode;
+        _translation = normalized;
+        return normalized;
     }
 
     public static async Task<bool> ApplyReplaceAsync()
@@ -117,7 +184,12 @@ public static class TranslationTooltipService
             activate: !spinnerOnly);
 
     private static void OpenTranslation(string translation, double fontSize, bool canReplace) =>
-        Open(() => new TranslationTooltipWindow(translation, fontSize, canReplace: canReplace));
+        Open(() => new TranslationTooltipWindow(
+            translation,
+            fontSize,
+            canReplace: canReplace,
+            canShowModes: VariantsAvailable,
+            activeMode: _activeVariantMode));
 
     private static void Open(Func<TranslationTooltipWindow> createWindow, bool activate = true)
     {

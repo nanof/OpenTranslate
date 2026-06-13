@@ -117,6 +117,8 @@ public sealed class TranslationOrchestrator
 
             await ApplyTranslationAsync(
                 translated,
+                source.Text,
+                settings,
                 source.Window,
                 source.Control,
                 source.ReplaceAll,
@@ -365,6 +367,8 @@ public sealed class TranslationOrchestrator
 
     private Task ApplyTranslationAsync(
         string translated,
+        string? sourceText,
+        AppSettings settings,
         nint targetWindow,
         nint targetControl,
         bool replaceAll,
@@ -389,8 +393,19 @@ public sealed class TranslationOrchestrator
                 // work; hide the Replace action in that case.
                 var canReplace = ResolveEditability(tooltipWindow, tooltipControl);
 
+                var normalized = TextFormattingHelper.NormalizeForTranslation(translated);
+
+                // Register the source text so the tooltip can preview the same text under each
+                // improvement mode on demand.
+                TranslationTooltipService.SetVariantContext(
+                    sourceText ?? "",
+                    settings,
+                    _translationClient,
+                    settings.ImprovementMode,
+                    normalized);
+
                 TranslationTooltipService.Update(
-                    TextFormattingHelper.NormalizeForTranslation(translated),
+                    normalized,
                     tooltipFontSize,
                     tooltipWindow,
                     tooltipControl,

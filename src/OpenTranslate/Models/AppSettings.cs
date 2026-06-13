@@ -13,6 +13,7 @@ public sealed class AppSettings
     public string SourceLanguage { get; set; } = "es";
     public string TargetLanguage { get; set; } = "en";
     public bool AutoDetectLanguage { get; set; }
+    public TextImprovementMode ImprovementMode { get; set; } = TextImprovementMode.None;
     public bool StartWithWindows { get; set; }
     public bool PlaySoundOnTranslationStart { get; set; }
     public bool TypewriterPaste { get; set; } = true;
@@ -31,4 +32,22 @@ public sealed class AppSettings
         string.IsNullOrWhiteSpace(Model)
             ? TranslationProviders.GetDefaultModel(Provider)
             : Model.Trim();
+
+    // Produces a copy with a different improvement mode, used to preview how the same
+    // source text reads under each mode without mutating the persisted settings.
+    public AppSettings WithImprovementMode(TextImprovementMode mode) => new()
+    {
+        Provider = Provider,
+        ApiKeys = new Dictionary<TranslationProvider, string>(ApiKeys),
+        Model = Model,
+        SourceLanguage = SourceLanguage,
+        TargetLanguage = TargetLanguage,
+        AutoDetectLanguage = AutoDetectLanguage,
+        ImprovementMode = mode,
+        StartWithWindows = StartWithWindows,
+        PlaySoundOnTranslationStart = PlaySoundOnTranslationStart,
+        TypewriterPaste = TypewriterPaste,
+        TooltipFontSize = TooltipFontSize,
+        ActivationShortcut = ActivationShortcut
+    };
 }

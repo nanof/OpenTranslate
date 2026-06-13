@@ -46,6 +46,12 @@ public partial class SettingsViewModel : ObservableObject
     private bool _supportsAutoDetect = true;
 
     [ObservableProperty]
+    private bool _supportsImprovement = true;
+
+    [ObservableProperty]
+    private TextImprovementOption _selectedImprovement = TextImprovementModes.Options[0];
+
+    [ObservableProperty]
     private string _model = AppSettings.DefaultOpenRouterModel;
 
     [ObservableProperty]
@@ -113,6 +119,8 @@ public partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<TranslationProviderOption> AvailableProviders => TranslationProviders.Options;
 
+    public IReadOnlyList<TextImprovementOption> AvailableImprovements => TextImprovementModes.Options;
+
     public event EventHandler? SettingsSaved;
 
     public SettingsViewModel(
@@ -145,6 +153,8 @@ public partial class SettingsViewModel : ObservableObject
         RequiresApiKey = TranslationProviders.RequiresApiKey(settings.Provider);
         SupportsModelSelection = TranslationProviders.SupportsModelSelection(settings.Provider);
         SupportsAutoDetect = TranslationProviders.SupportsAutoDetect(settings.Provider);
+        SupportsImprovement = TranslationProviders.SupportsImprovement(settings.Provider);
+        SelectedImprovement = TextImprovementModes.FromMode(settings.ImprovementMode);
         _isSyncingApiKey = true;
         ApiKey = GetApiKeyForProvider(settings.Provider);
         _isSyncingApiKey = false;
@@ -300,9 +310,13 @@ public partial class SettingsViewModel : ObservableObject
         RequiresApiKey = TranslationProviders.RequiresApiKey(value);
         SupportsModelSelection = TranslationProviders.SupportsModelSelection(value);
         SupportsAutoDetect = TranslationProviders.SupportsAutoDetect(value);
+        SupportsImprovement = TranslationProviders.SupportsImprovement(value);
 
         if (!SupportsAutoDetect)
             AutoDetectLanguage = false;
+
+        if (!SupportsImprovement)
+            SelectedImprovement = TextImprovementModes.Options[0];
 
         if (!_isSyncingProvider)
         {
@@ -517,6 +531,9 @@ public partial class SettingsViewModel : ObservableObject
             SourceLanguage = string.IsNullOrWhiteSpace(SourceLanguage) ? "es" : SourceLanguage.Trim(),
             TargetLanguage = string.IsNullOrWhiteSpace(TargetLanguage) ? "en" : TargetLanguage.Trim(),
             AutoDetectLanguage = AutoDetectLanguage,
+            ImprovementMode = SupportsImprovement
+                ? SelectedImprovement.Mode
+                : TextImprovementMode.None,
             StartWithWindows = StartWithWindows,
             PlaySoundOnTranslationStart = PlaySoundOnTranslationStart,
             TypewriterPaste = TypewriterPaste,

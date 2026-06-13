@@ -311,15 +311,22 @@ public sealed class TranslationClient : IDisposable
         var blankLineRule =
             $"The marker {TextFormattingHelper.BlankLineMarker} represents a blank line between paragraphs: do not translate it, remove it, or move it.";
 
-        if (settings.AutoDetectLanguage)
+        if (settings.ImprovementMode == TextImprovementMode.ImproveOnly)
         {
-            return $"Detect whether the text is in {source} or {target}. " +
-                   $"If it is in {source}, translate it to {target}. " +
-                   $"If it is in {target}, translate it to {source}. " +
-                   $"Return only the translated text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
+            return "Improve the following text without translating it; keep it in its original language. " +
+                   "Correct spelling, grammar, and punctuation, and make it read clearly and naturally. " +
+                   $"Return only the improved text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
         }
 
-        return $"Translate from {source} to {target}. Return only the translated text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
+        var task = settings.AutoDetectLanguage
+            ? $"Detect whether the text is in {source} or {target}. " +
+              $"If it is in {source}, translate it to {target}. " +
+              $"If it is in {target}, translate it to {source}."
+            : $"Translate from {source} to {target}.";
+
+        var improvement = TextImprovementModes.GetTranslationClause(settings.ImprovementMode);
+
+        return $"{task}{improvement} Return only the translated text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
     }
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, TranslationProvider provider)
