@@ -22,7 +22,7 @@ public static class KeyboardTextCaptureService
             // The clipboard sequence number only increments when the app actually writes to
             // the clipboard, i.e. when there is a real selection. If it stays unchanged the
             // Ctrl+C was a no-op (nothing selected), so we report no selection.
-            var deadline = Environment.TickCount64 + 700;
+            var deadline = Environment.TickCount64 + 450;
             while (Environment.TickCount64 < deadline)
             {
                 if (ClipboardService.GetSequenceNumber() != sequenceBefore)

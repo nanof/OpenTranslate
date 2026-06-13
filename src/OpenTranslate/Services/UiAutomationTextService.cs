@@ -4,7 +4,71 @@ namespace OpenTranslate.Services;
 
 public static class UiAutomationTextService
 {
-    public static TextCaptureResult? TryCaptureSelection(nint window, nint control)
+    // UI Automation calls are synchronous cross-process COM calls with no built-in timeout.
+    // In heavy Electron apps (Discord, Slack) a full descendant tree walk can hang for a very
+    // long time, which would otherwise freeze the UI thread and deadlock the orchestrator.
+    // Every public entry point is therefore executed on a dedicated MTA thread and abandoned
+    // if it exceeds this budget.
+    private const int UiAutomationTimeoutMs = 1500;
+
+    public static TextCaptureResult? TryCaptureSelection(nint window, nint control) =>
+        RunBounded(() => TryCaptureSelectionCore(window, control), null);
+
+    public static TextCaptureResult? TryCapture(nint window, nint control) =>
+        RunBounded(() => TryCaptureCore(window, control), null);
+
+    public static bool? TryGetEditability(nint window, nint control) =>
+        RunBounded<bool?>(() => TryGetEditabilityCore(window, control), null);
+
+    public static bool TrySetValue(nint window, nint control, string value) =>
+        RunBounded(() => TrySetValueCore(window, control, value), false);
+
+    public static bool TryApplyTranslation(nint window, nint control, string translated, bool replaceAll)
+    {
+        if (!replaceAll || translated.Contains('\n'))
+            return false;
+
+        return RunBounded(() => TryApplyTranslationCore(window, control, translated), false);
+    }
+
+    private static T RunBounded<T>(Func<T> func, T timeoutValue)
+    {
+        var result = timeoutValue;
+
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                result = func();
+            }
+            catch
+            {
+                result = timeoutValue;
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "UiAutomationBounded"
+        };
+
+        try
+        {
+            thread.SetApartmentState(ApartmentState.MTA);
+        }
+        catch
+        {
+            // Ignore; thread still runs, just not as MTA.
+        }
+
+        thread.Start();
+
+        // If the worker exceeds the budget we abandon it (background thread, no shared
+        // disposable state) and report the timeout value so the caller can fall back
+        // instead of hanging forever.
+        return thread.Join(UiAutomationTimeoutMs) ? result : timeoutValue;
+    }
+
+    private static TextCaptureResult? TryCaptureSelectionCore(nint window, nint control)
     {
         try
         {
@@ -23,7 +87,7 @@ public static class UiAutomationTextService
         return null;
     }
 
-    public static TextCaptureResult? TryCapture(nint window, nint control)
+    private static TextCaptureResult? TryCaptureCore(nint window, nint control)
     {
         try
         {
@@ -46,11 +110,16 @@ public static class UiAutomationTextService
         return null;
     }
 
-    public static bool? TryGetEditability(nint window, nint control)
+    private static bool? TryGetEditabilityCore(nint window, nint control)
     {
         try
         {
-            foreach (var element in EnumerateCandidateElements(window, control))
+            // Only inspect the directly resolvable elements (focused element / control / window).
+            // The full descendant tree walk used for capture is far too slow for a mere
+            // editability probe and would stall every shortcut in heavy apps.
+            foreach (var element in ResolveRoots(window, control)
+                         .Where(r => r is not null)
+                         .Cast<AutomationElement>())
             {
                 var editability = GetEditabilityFromElement(element);
                 if (editability.HasValue)
@@ -65,7 +134,7 @@ public static class UiAutomationTextService
         return null;
     }
 
-    public static bool TrySetValue(nint window, nint control, string value)
+    private static bool TrySetValueCore(nint window, nint control, string value)
     {
         try
         {
@@ -83,11 +152,8 @@ public static class UiAutomationTextService
         return false;
     }
 
-    public static bool TryApplyTranslation(nint window, nint control, string translated, bool replaceAll)
+    private static bool TryApplyTranslationCore(nint window, nint control, string translated)
     {
-        if (!replaceAll || translated.Contains('\n'))
-            return false;
-
         try
         {
             foreach (var element in EnumerateCandidateElements(window, control))

@@ -6,6 +6,7 @@ public sealed class TranslationOrchestrator
 {
     private const int ClipboardDelayMs = 120;
     private const int PasteDelayMs = 200;
+    private const int OperationTimeoutMs = 20000;
 
     private readonly SecureSettingsStore _settingsStore;
     private readonly TranslationClient _translationClient;
@@ -46,6 +47,29 @@ public sealed class TranslationOrchestrator
 
         _keyboardHookService.Pause();
 
+        var released = 0;
+
+        void ReleaseOnce()
+        {
+            if (Interlocked.Exchange(ref released, 1) != 0)
+                return;
+
+            _keyboardHookService.Resume();
+            _gate.Release();
+        }
+
+        using var watchdogCts = new CancellationTokenSource();
+
+        // Safety net: even if a capture/paste step hangs (e.g. an unresponsive app's UI
+        // Automation provider), guarantee the hook and gate are released so the app keeps
+        // working everywhere else.
+        _ = Task.Delay(OperationTimeoutMs, watchdogCts.Token)
+            .ContinueWith(
+                _ => ReleaseOnce(),
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnRanToCompletion,
+                TaskScheduler.Default);
+
         try
         {
             var settings = _settingsStore.Load();
@@ -61,11 +85,10 @@ public sealed class TranslationOrchestrator
                 return;
             }
 
+            // Show feedback immediately, before any (potentially slow) text capture or UI
+            // Automation work, so the spinner appears right after the activation sound.
             if (fromShortcut)
-            {
-                await TryShowTooltipPendingAsync(targetWindow, targetControl, settings.TooltipFontSize)
-                    .ConfigureAwait(false);
-            }
+                await ShowSpinnerOnlyAsync(settings.TooltipFontSize).ConfigureAwait(false);
 
             var source = await ResolveSourceTextAsync(fromShortcut, targetWindow, targetControl, clipboardAlreadyUpdated)
                 .ConfigureAwait(false);
@@ -81,10 +104,15 @@ public sealed class TranslationOrchestrator
                 if (CanUseInlineSpinner(source.Window, source.Control)
                     && !EditableFieldSpinnerService.IsActive)
                 {
+                    // Native Win32 field: replace the floating spinner with an in-field one.
                     await StartInlineSpinnerAsync(source).ConfigureAwait(false);
                 }
+                else if (!fromShortcut && !EditableFieldSpinnerService.IsActive)
+                {
+                    await ShowSpinnerOnlyAsync(settings.TooltipFontSize).ConfigureAwait(false);
+                }
             }
-            else
+            else if (!fromShortcut)
             {
                 await ShowTooltipPendingAsync(settings.TooltipFontSize).ConfigureAwait(false);
             }
@@ -119,8 +147,8 @@ public sealed class TranslationOrchestrator
         }
         finally
         {
-            _keyboardHookService.Resume();
-            _gate.Release();
+            watchdogCts.Cancel();
+            ReleaseOnce();
         }
     }
 
@@ -140,8 +168,12 @@ public sealed class TranslationOrchestrator
                 ? targetControl
                 : InputSimulationService.GetFocusedControl(window);
 
+            // Computed once and reused to avoid repeating the (potentially slow) editability
+            // probe in non-Win32 apps.
+            var preferFieldContent = ShouldPreferFieldContent(window, control);
+
             if (fromShortcut)
-                TryStartInlineSpinnerEarly(window, control, clipboardAlreadyUpdated);
+                TryStartInlineSpinnerEarly(window, control, clipboardAlreadyUpdated, preferFieldContent);
 
             if (EditableFieldSpinnerService.IsActive)
             {
@@ -160,8 +192,6 @@ public sealed class TranslationOrchestrator
 
             if (fromShortcut)
                 await Task.Delay(ClipboardDelayMs).ConfigureAwait(true);
-
-            var preferFieldContent = ShouldPreferFieldContent(window, control);
 
             if (fromShortcut && clipboardAlreadyUpdated)
             {
@@ -191,10 +221,13 @@ public sealed class TranslationOrchestrator
             {
                 if (fromShortcut)
                 {
-                    var fullFieldCapture = TryCaptureEditableFieldContent(window, control);
-                    if (fullFieldCapture is not null && !string.IsNullOrWhiteSpace(fullFieldCapture.Text))
-                        return FromFieldCapture(fullFieldCapture, window, control, true);
+                    // Native Win32 controls expose their text instantly via window messages.
+                    var win32Capture = TryCaptureWin32FieldContent(window, control);
+                    if (win32Capture is not null && !string.IsNullOrWhiteSpace(win32Capture.Text))
+                        return FromFieldCapture(win32Capture, window, control, true);
 
+                    // For non-Win32 (Electron) fields, a keyboard select-all+copy is far faster and
+                    // more reliable than a full UI Automation tree walk, so try it before UI Automation.
                     var allCapture = KeyboardTextCaptureService.TryCaptureAll(window, _clipboardService);
                     if (allCapture is not null && !string.IsNullOrWhiteSpace(allCapture.Text))
                     {
@@ -206,6 +239,10 @@ public sealed class TranslationOrchestrator
                             false,
                             true);
                     }
+
+                    var fieldCapture = TryCaptureEditableFieldContent(window, control);
+                    if (fieldCapture is not null && !string.IsNullOrWhiteSpace(fieldCapture.Text))
+                        return FromFieldCapture(fieldCapture, window, control, true);
                 }
 
                 return (null, window, control, false, false, true);
@@ -298,6 +335,15 @@ public sealed class TranslationOrchestrator
         };
     }
 
+    private static TextCaptureResult? TryCaptureWin32FieldContent(nint window, nint control)
+    {
+        var resolvedControl = ResolveFocusedControl(window, control);
+        if (resolvedControl == 0)
+            return null;
+
+        return TextControlService.TryCapture(resolvedControl);
+    }
+
     private static TextCaptureResult? TryCaptureEditableFieldContent(nint window, nint control)
     {
         var resolvedControl = ResolveFocusedControl(window, control);
@@ -329,9 +375,9 @@ public sealed class TranslationOrchestrator
             false,
             isEditable);
 
-    private void TryStartInlineSpinnerEarly(nint window, nint control, bool clipboardAlreadyUpdated)
+    private void TryStartInlineSpinnerEarly(nint window, nint control, bool clipboardAlreadyUpdated, bool preferFieldContent)
     {
-        if (!ShouldPreferFieldContent(window, control) || !CanUseInlineSpinner(window, control))
+        if (!preferFieldContent || !CanUseInlineSpinner(window, control))
             return;
 
         TextCaptureResult? fieldCapture = null;
@@ -464,32 +510,17 @@ public sealed class TranslationOrchestrator
 
     private void SetStatus(string message) => StatusChanged?.Invoke(this, message);
 
-    private async Task TryShowTooltipPendingAsync(
-        nint targetWindow,
-        nint targetControl,
-        double tooltipFontSize)
-    {
-        await RunOnUiThreadAsync(() =>
-        {
-            var window = targetWindow != 0
-                ? targetWindow
-                : InputSimulationService.GetForegroundWindow();
-
-            var control = targetControl != 0
-                ? targetControl
-                : InputSimulationService.GetFocusedControl(window);
-
-            if (!ShouldPreferFieldContent(window, control))
-                TranslationTooltipService.ShowPending(tooltipFontSize);
-
-            return Task.CompletedTask;
-        }).ConfigureAwait(false);
-    }
-
     private static Task ShowTooltipPendingAsync(double tooltipFontSize) =>
         RunOnUiThreadAsync(() =>
         {
             TranslationTooltipService.ShowPending(tooltipFontSize);
+            return Task.CompletedTask;
+        });
+
+    private static Task ShowSpinnerOnlyAsync(double tooltipFontSize) =>
+        RunOnUiThreadAsync(() =>
+        {
+            TranslationTooltipService.ShowPending(tooltipFontSize, spinnerOnly: true);
             return Task.CompletedTask;
         });
 
