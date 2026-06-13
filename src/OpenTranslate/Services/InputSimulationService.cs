@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
@@ -9,8 +10,18 @@ public static class InputSimulationService
     private const int SwRestore = 9;
     private const int AsfwAny = -1;
     private const int WmPaste = 0x0318;
+
+    private const uint InputKeyboard = 1;
+    private const uint KeyeventfKeyup = 0x0002;
+    private const uint KeyeventfUnicode = 0x0004;
+    private const ushort VkControl = 0x11;
+    private const ushort VkA = 0x41;
+
     [DllImport("user32.dll")]
     public static extern nint GetForegroundWindow();
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
     [DllImport("user32.dll")]
     private static extern bool IsWindow(nint hWnd);
@@ -98,6 +109,88 @@ public static class InputSimulationService
         _ = translatedText;
         PasteWithKeyboard(targetWindow);
     }
+
+    /// <summary>
+    /// Types <paramref name="text"/> into the target window character by character (a fast
+    /// typewriter effect) using synthesized Unicode key events. Returns false if the target
+    /// window could not be focused, so the caller can fall back to a regular paste.
+    /// </summary>
+    public static bool TypeIntoWindow(nint targetWindow, nint targetControl, string text, bool replaceAll, int perCharDelayMicroseconds)
+    {
+        _ = targetControl;
+
+        if (string.IsNullOrEmpty(text) || targetWindow == 0 || !IsWindow(targetWindow))
+            return false;
+
+        RestoreWindowFocus(targetWindow);
+        Thread.Sleep(120);
+
+        if (GetForegroundWindow() != targetWindow)
+            return false;
+
+        if (replaceAll)
+        {
+            SendKeyChord(VkControl, VkA);
+            Thread.Sleep(40);
+        }
+
+        foreach (var ch in text)
+        {
+            SendUnicodeChar(ch);
+            if (perCharDelayMicroseconds > 0)
+                SpinWaitMicroseconds(perCharDelayMicroseconds);
+        }
+
+        return true;
+    }
+
+    private static void SpinWaitMicroseconds(int microseconds)
+    {
+        var ticks = (long)(microseconds * (Stopwatch.Frequency / 1_000_000.0));
+        var start = Stopwatch.GetTimestamp();
+        while (Stopwatch.GetTimestamp() - start < ticks)
+            Thread.SpinWait(1);
+    }
+
+    private static void SendUnicodeChar(char ch)
+    {
+        var inputs = new[]
+        {
+            KeyboardInput(0, ch, KeyeventfUnicode),
+            KeyboardInput(0, ch, KeyeventfUnicode | KeyeventfKeyup)
+        };
+
+        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+    }
+
+    private static void SendKeyChord(ushort modifier, ushort key)
+    {
+        var inputs = new[]
+        {
+            KeyboardInput(modifier, 0, 0),
+            KeyboardInput(key, 0, 0),
+            KeyboardInput(key, 0, KeyeventfKeyup),
+            KeyboardInput(modifier, 0, KeyeventfKeyup)
+        };
+
+        SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
+    }
+
+    private static INPUT KeyboardInput(ushort virtualKey, ushort scanCode, uint flags) => new()
+    {
+        Type = InputKeyboard,
+        U = new InputUnion
+        {
+            Keyboard = new KEYBDINPUT
+            {
+                Vk = virtualKey,
+                Scan = scanCode,
+                Flags = flags,
+                Time = 0,
+                DwExtraInfo = nint.Zero
+            }
+        }
+    };
 
     private static void PasteWithKeyboard(nint targetWindow)
     {
@@ -190,6 +283,50 @@ public static class InputSimulationService
     }
 
     private static void SendCtrlVRaw() => SendChord("^v");
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct INPUT
+    {
+        public uint Type;
+        public InputUnion U;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    private struct InputUnion
+    {
+        [FieldOffset(0)] public MOUSEINPUT Mouse;
+        [FieldOffset(0)] public KEYBDINPUT Keyboard;
+        [FieldOffset(0)] public HARDWAREINPUT Hardware;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KEYBDINPUT
+    {
+        public ushort Vk;
+        public ushort Scan;
+        public uint Flags;
+        public uint Time;
+        public nint DwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct MOUSEINPUT
+    {
+        public int Dx;
+        public int Dy;
+        public uint MouseData;
+        public uint Flags;
+        public uint Time;
+        public nint DwExtraInfo;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct HARDWAREINPUT
+    {
+        public uint Msg;
+        public ushort ParamL;
+        public ushort ParamH;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct GuiThreadInfo

@@ -7,6 +7,7 @@ public sealed class TranslationOrchestrator
     private const int ClipboardDelayMs = 120;
     private const int PasteDelayMs = 200;
     private const int OperationTimeoutMs = 20000;
+    private const int TypewriterDelayMicroseconds = 1500;
 
     private readonly SecureSettingsStore _settingsStore;
     private readonly TranslationClient _translationClient;
@@ -121,7 +122,8 @@ public sealed class TranslationOrchestrator
                 source.PreferUiAutomationPaste,
                 source.IsEditable,
                 fromShortcut,
-                settings.TooltipFontSize).ConfigureAwait(false);
+                settings.TooltipFontSize,
+                settings.TypewriterPaste).ConfigureAwait(false);
 
             SetStatus("Done");
         }
@@ -368,7 +370,8 @@ public sealed class TranslationOrchestrator
         bool preferUiAutomationPaste,
         bool isEditable,
         bool fromShortcut,
-        double tooltipFontSize) =>
+        double tooltipFontSize,
+        bool typewriterPaste) =>
         RunOnUiThreadAsync(async () =>
         {
             if (!isEditable)
@@ -406,6 +409,21 @@ public sealed class TranslationOrchestrator
             var pasteControl = fromShortcut && targetControl != 0
                 ? targetControl
                 : InputSimulationService.GetFocusedControl(pasteWindow);
+
+            // Fast typewriter effect (when enabled): type the translation character by character.
+            // Skipped for multi-line text to avoid synthesizing Enter (which submits messages in
+            // chat apps).
+            var isSingleLine = !textToPaste.Contains('\n') && !textToPaste.Contains('\r');
+            if (typewriterPaste && isSingleLine)
+            {
+                var perCharDelayMicroseconds = textToPaste.Length > 220 ? 500 : TypewriterDelayMicroseconds;
+                var typed = await Task.Run(() =>
+                        InputSimulationService.TypeIntoWindow(pasteWindow, pasteControl, textToPaste, replaceAll, perCharDelayMicroseconds))
+                    .ConfigureAwait(true);
+
+                if (typed)
+                    return;
+            }
 
             if (preferUiAutomationPaste
                 && UiAutomationTextService.TryApplyTranslation(pasteWindow, pasteControl, translated, replaceAll))
