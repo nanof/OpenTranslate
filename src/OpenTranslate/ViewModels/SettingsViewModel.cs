@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Windows.Data;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -45,6 +46,12 @@ public partial class SettingsViewModel : ObservableObject
     private ModelOption? _selectedModel;
 
     [ObservableProperty]
+    private string _modelPerformanceHint = "";
+
+    [ObservableProperty]
+    private bool _modelPerformanceIsWarning;
+
+    [ObservableProperty]
     private string _sourceLanguage = "es";
 
     [ObservableProperty]
@@ -65,6 +72,9 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _playSoundOnTranslationStart;
+
+    [ObservableProperty]
+    private bool _typewriterPaste = true;
 
     [ObservableProperty]
     private double _tooltipFontSize = AppSettings.DefaultTooltipFontSize;
@@ -137,12 +147,14 @@ public partial class SettingsViewModel : ObservableObject
         UpdateAutoDetectLanguageLabel();
         StartWithWindows = settings.StartWithWindows;
         PlaySoundOnTranslationStart = settings.PlaySoundOnTranslationStart;
+        TypewriterPaste = settings.TypewriterPaste;
         TooltipFontSize = settings.TooltipFontSize is > 0
             ? settings.TooltipFontSize
             : AppSettings.DefaultTooltipFontSize;
         ActivationShortcut = settings.ActivationShortcut ?? ActivationShortcut.Default;
         ShortcutDoublePress = ActivationShortcut.DoublePress;
         UpdateShortcutDisplay();
+        UpdateModelPerformanceHint();
     }
 
     public async Task LoadModelsAsync()
@@ -222,7 +234,18 @@ public partial class SettingsViewModel : ObservableObject
         UpdateAutoDetectLanguageLabel();
     }
 
-    partial void OnModelChanged(string value) => _filteredModelsView?.Refresh();
+    partial void OnModelChanged(string value)
+    {
+        _filteredModelsView?.Refresh();
+        UpdateModelPerformanceHint();
+    }
+
+    private void UpdateModelPerformanceHint()
+    {
+        var info = ModelPerformanceCatalog.GetInfo(Model);
+        ModelPerformanceHint = info?.ToHint() ?? "";
+        ModelPerformanceIsWarning = info?.Deprecated ?? false;
+    }
 
     partial void OnModelFilterChanged(string value) => _filteredModelsView?.Refresh();
 
@@ -386,8 +409,11 @@ public partial class SettingsViewModel : ObservableObject
         try
         {
             var settings = BuildSettingsFromViewModel();
+            var stopwatch = Stopwatch.StartNew();
             var result = await _translationClient.TranslateAsync("Hello world", settings);
-            StatusMessage = $"Connection OK. Example: {result}";
+            stopwatch.Stop();
+            var benchmark = ModelPerformanceCatalog.GetInfo(Model)?.ToBenchmarkSuffix() ?? "";
+            StatusMessage = $"Connection OK · {stopwatch.ElapsedMilliseconds} ms round-trip.{benchmark} Example: {result}";
         }
         catch (TranslationApiException ex)
         {
@@ -475,6 +501,7 @@ public partial class SettingsViewModel : ObservableObject
             AutoDetectLanguage = AutoDetectLanguage,
             StartWithWindows = StartWithWindows,
             PlaySoundOnTranslationStart = PlaySoundOnTranslationStart,
+            TypewriterPaste = TypewriterPaste,
             TooltipFontSize = TooltipFontSize,
             ActivationShortcut = ActivationShortcut
         };

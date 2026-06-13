@@ -21,7 +21,7 @@ Settings are preserved across upgrades at `%AppData%\OpenTranslate\settings.dat`
 
 1. Run the application. A **T** icon appears in the system tray.
 2. Open **Settings…** (right-click the icon or double-click) and enter your API key.
-3. By default, it translates from **Spanish** to **English** using the `google/gemini-2.0-flash-001` model.
+3. By default, it translates from **Spanish** to **English** using the `google/gemini-3.1-flash-lite` model (a low-latency model well suited to translation).
 4. Select text in any app, press **Ctrl+C** twice quickly, and the translation will be pasted automatically.
 
 You can also use **Translate clipboard now** from the context menu to manually translate whatever is on the clipboard.
@@ -40,7 +40,7 @@ Available options:
 |-------|-------------|
 | Provider | OpenRouter, OpenAI, or Gemini (Google) |
 | API key | Key for the selected provider |
-| Model | Model ID (default: `google/gemini-2.0-flash-001` on OpenRouter, `gpt-4o-mini` on OpenAI, `gemini-2.0-flash` on Gemini) |
+| Model | Model ID (default: `google/gemini-3.1-flash-lite` on OpenRouter, `gpt-4o-mini` on OpenAI, `gemini-3.1-flash-lite` on Gemini). The settings window shows a speed/latency hint for the selected model. |
 | Source language | Language code, e.g. `es` |
 | Target language | Language code, e.g. `en` |
 | Start with Windows | Register the app to run at login |

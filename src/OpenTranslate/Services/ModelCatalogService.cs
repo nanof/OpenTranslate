@@ -177,17 +177,15 @@ public sealed class ModelCatalogService : IDisposable
             ],
             TranslationProvider.Gemini =>
             [
-                new() { Id = "gemini-2.0-flash", Description = "Fast default" },
-                new() { Id = "gemini-2.0-flash-lite", Description = "Lightweight" },
-                new() { Id = "gemini-1.5-flash", Description = "Previous flash generation" },
-                new() { Id = "gemini-1.5-pro", Description = "Higher quality" }
+                new() { Id = "gemini-3.1-flash-lite", Description = "Fast default" },
+                new() { Id = "gemini-3.5-flash", Description = "Higher quality" }
             ],
             _ =>
             [
-                new() { Id = "google/gemini-2.0-flash-001", Description = "Google Gemini 2.0 Flash" },
+                new() { Id = "google/gemini-3.1-flash-lite", Description = "Google Gemini 3.1 Flash-Lite" },
+                new() { Id = "google/gemini-3.5-flash", Description = "Google Gemini 3.5 Flash" },
                 new() { Id = "openai/gpt-4o-mini", Description = "OpenAI GPT-4o mini" },
-                new() { Id = "openai/gpt-4o", Description = "OpenAI GPT-4o" },
-                new() { Id = "anthropic/claude-3.5-sonnet", Description = "Anthropic Claude 3.5 Sonnet" },
+                new() { Id = "anthropic/claude-haiku-4.5", Description = "Anthropic Claude Haiku 4.5" },
                 new() { Id = "meta-llama/llama-3.3-70b-instruct", Description = "Meta Llama 3.3 70B" }
             ]
         };
