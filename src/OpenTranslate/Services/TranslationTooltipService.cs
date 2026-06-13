@@ -35,6 +35,8 @@ public static class TranslationTooltipService
             return;
         }
 
+        ClearVariantContext();
+
         if (_current is { IsVisible: true })
         {
             _current.SetPending(spinnerOnly);
@@ -89,7 +91,7 @@ public static class TranslationTooltipService
         _activeVariantMode = activeMode;
         _variantCache.Clear();
         _variantCache[activeMode] = activeTranslation;
-        VariantsAvailable = TranslationProviders.SupportsImprovement(settings.Provider)
+        VariantsAvailable = TranslationProviders.SupportsModelSelection(settings.Provider)
             && !string.IsNullOrWhiteSpace(sourceText);
     }
 
@@ -168,6 +170,7 @@ public static class TranslationTooltipService
         }
 
         _current?.CloseSafely();
+        ClearVariantContext();
     }
 
     private static void StorePasteContext(string translation, nint targetWindow, nint targetControl, bool replaceAll)

@@ -218,6 +218,73 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="SettingsSecondaryButton" TargetType="Button">
+            <Setter Property="Foreground" Value="#CDD6F4" />
+            <Setter Property="Background" Value="#45475A" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="3"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#585B70" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#6C7086" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="SettingsPrimaryButton" TargetType="Button">
+            <Setter Property="Foreground" Value="#1E1E2E" />
+            <Setter Property="Background" Value="#89B4FA" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}"
+                                CornerRadius="3"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              TextElement.Foreground="{TemplateBinding Foreground}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#B4BEFE" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#74C7EC" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </Window.Resources>
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -479,11 +546,9 @@
             <Button Grid.Column="1"
                     Content="Change…"
                     Click="OnChangeShortcut"
+                    Style="{StaticResource SettingsSecondaryButton}"
                     Margin="6,0,0,0"
                     Padding="10,4"
-                    Background="#45475A"
-                    Foreground="#CDD6F4"
-                    BorderThickness="0"
                     FontSize="11" />
         </Grid>
 
@@ -506,21 +571,16 @@
             <Button Content="Test"
                     Command="{Binding TestTranslationCommand}"
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
+                    Style="{StaticResource SettingsSecondaryButton}"
                     Padding="12,5"
                     Margin="0,0,6,0"
-                    Background="#45475A"
-                    Foreground="#CDD6F4"
-                    BorderThickness="0"
                     FontSize="11" />
             <Button Content="Save"
                     Command="{Binding SaveCommand}"
                     IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBool}}"
+                    Style="{StaticResource SettingsPrimaryButton}"
                     Padding="12,5"
-                    Background="#89B4FA"
-                    Foreground="#1E1E2E"
-                    BorderThickness="0"
-                    FontSize="11"
-                    FontWeight="SemiBold" />
+                    FontSize="11" />
         </StackPanel>
     </Grid>
 </Window>

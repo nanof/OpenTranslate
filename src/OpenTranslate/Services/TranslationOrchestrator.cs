@@ -395,14 +395,20 @@ public sealed class TranslationOrchestrator
 
                 var normalized = TextFormattingHelper.NormalizeForTranslation(translated);
 
-                // Register the source text so the tooltip can preview the same text under each
-                // improvement mode on demand.
-                TranslationTooltipService.SetVariantContext(
-                    sourceText ?? "",
-                    settings,
-                    _translationClient,
-                    settings.ImprovementMode,
-                    normalized);
+                // Modes preview only applies to AI providers (OpenRouter, OpenAI, Gemini).
+                if (TranslationProviders.SupportsModelSelection(settings.Provider))
+                {
+                    TranslationTooltipService.SetVariantContext(
+                        sourceText ?? "",
+                        settings,
+                        _translationClient,
+                        settings.ImprovementMode,
+                        normalized);
+                }
+                else
+                {
+                    TranslationTooltipService.ClearVariantContext();
+                }
 
                 TranslationTooltipService.Update(
                     normalized,
