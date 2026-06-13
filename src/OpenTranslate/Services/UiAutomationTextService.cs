@@ -124,11 +124,45 @@ public static class UiAutomationTextService
                 var editability = GetEditabilityFromElement(element);
                 if (editability.HasValue)
                     return editability;
+
+                // The focused element is often a non-edit node (a selected link/span in a web
+                // page, or a generic container). Walk up a bounded number of ancestors to find
+                // the nearest editable field (ControlType.Edit / writable ValuePattern) or
+                // read-only web Document. This lets browsers be reliably classified as
+                // non-editable instead of falling through to the editable default, while real
+                // editable fields (whose nearest container is an Edit) still resolve to true.
+                var ancestorEditability = GetEditabilityFromAncestors(element);
+                if (ancestorEditability.HasValue)
+                    return ancestorEditability;
             }
         }
         catch
         {
             return null;
+        }
+
+        return null;
+    }
+
+    private static bool? GetEditabilityFromAncestors(AutomationElement element)
+    {
+        try
+        {
+            var walker = TreeWalker.ControlViewWalker;
+            var current = walker.GetParent(element);
+
+            for (var depth = 0; depth < 12 && current is not null; depth++)
+            {
+                var editability = GetEditabilityFromElement(current);
+                if (editability.HasValue)
+                    return editability;
+
+                current = walker.GetParent(current);
+            }
+        }
+        catch
+        {
+            // Ignore tree walk failures (common in heavy Electron apps).
         }
 
         return null;
