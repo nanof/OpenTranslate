@@ -99,22 +99,14 @@ public sealed class TranslationOrchestrator
                 return;
             }
 
-            if (source.IsEditable)
+            // For shortcut activations the floating spinner was already shown above. For other
+            // activations (e.g. tray menu) show the appropriate feedback now.
+            if (!fromShortcut)
             {
-                if (CanUseInlineSpinner(source.Window, source.Control)
-                    && !EditableFieldSpinnerService.IsActive)
-                {
-                    // Native Win32 field: replace the floating spinner with an in-field one.
-                    await StartInlineSpinnerAsync(source).ConfigureAwait(false);
-                }
-                else if (!fromShortcut && !EditableFieldSpinnerService.IsActive)
-                {
+                if (source.IsEditable)
                     await ShowSpinnerOnlyAsync(settings.TooltipFontSize).ConfigureAwait(false);
-                }
-            }
-            else if (!fromShortcut)
-            {
-                await ShowTooltipPendingAsync(settings.TooltipFontSize).ConfigureAwait(false);
+                else
+                    await ShowTooltipPendingAsync(settings.TooltipFontSize).ConfigureAwait(false);
             }
 
             var translated = await _translationClient
@@ -171,24 +163,6 @@ public sealed class TranslationOrchestrator
             // Computed once and reused to avoid repeating the (potentially slow) editability
             // probe in non-Win32 apps.
             var preferFieldContent = ShouldPreferFieldContent(window, control);
-
-            if (fromShortcut)
-                TryStartInlineSpinnerEarly(window, control, clipboardAlreadyUpdated, preferFieldContent);
-
-            if (EditableFieldSpinnerService.IsActive)
-            {
-                var early = EditableFieldSpinnerService.GetCapturedSource();
-                if (!string.IsNullOrWhiteSpace(early.Text))
-                {
-                    return (
-                        early.Text,
-                        early.Window,
-                        early.Control,
-                        early.ReplaceAll,
-                        false,
-                        true);
-                }
-            }
 
             if (fromShortcut)
                 await Task.Delay(ClipboardDelayMs).ConfigureAwait(true);
@@ -375,45 +349,6 @@ public sealed class TranslationOrchestrator
             false,
             isEditable);
 
-    private void TryStartInlineSpinnerEarly(nint window, nint control, bool clipboardAlreadyUpdated, bool preferFieldContent)
-    {
-        if (!preferFieldContent || !CanUseInlineSpinner(window, control))
-            return;
-
-        TextCaptureResult? fieldCapture = null;
-
-        if (clipboardAlreadyUpdated)
-        {
-            var clipboardText = _clipboardService.TryGetText();
-            if (!string.IsNullOrWhiteSpace(clipboardText))
-            {
-                fieldCapture = new TextCaptureResult
-                {
-                    Text = TextFormattingHelper.NormalizeForTranslation(clipboardText),
-                    Control = ResolveFocusedControl(window, control),
-                    ReplaceAll = false
-                };
-            }
-        }
-
-        fieldCapture ??= TryCaptureEditableSelection(window, control, allowKeyboardCapture: false);
-
-        if (fieldCapture is null || string.IsNullOrWhiteSpace(fieldCapture.Text))
-            return;
-
-        EditableFieldSpinnerService.TryStart(
-            window,
-            fieldCapture.Control != 0 ? fieldCapture.Control : control,
-            fieldCapture.Text,
-            fieldCapture.ReplaceAll);
-    }
-
-    private static bool CanUseInlineSpinner(nint window, nint control)
-    {
-        var resolvedControl = ResolveFocusedControl(window, control);
-        return resolvedControl != 0 && TextControlService.IsTextInputControl(resolvedControl);
-    }
-
     private static bool ShouldPreferFieldContent(nint window, nint control) =>
         ResolveEditability(window, control);
 
@@ -456,12 +391,6 @@ public sealed class TranslationOrchestrator
             }
 
             var textToPaste = TextFormattingHelper.NormalizeForTranslation(translated);
-
-            if (EditableFieldSpinnerService.IsActive)
-            {
-                EditableFieldSpinnerService.Complete(textToPaste);
-                return;
-            }
 
             TranslationTooltipService.CloseIfOpen();
 
@@ -524,22 +453,8 @@ public sealed class TranslationOrchestrator
             return Task.CompletedTask;
         });
 
-    private static Task StartInlineSpinnerAsync(
-        (string? Text, nint Window, nint Control, bool ReplaceAll, bool PreferUiAutomationPaste, bool IsEditable) source) =>
-        RunOnUiThreadAsync(() =>
-        {
-            TranslationTooltipService.CloseIfOpen();
-            EditableFieldSpinnerService.TryStart(
-                source.Window,
-                source.Control,
-                source.Text!,
-                source.ReplaceAll);
-            return Task.CompletedTask;
-        });
-
     private void Fail(string message)
     {
-        EditableFieldSpinnerService.Restore();
         TranslationTooltipService.CloseIfOpen();
         SetStatus("Error");
         TranslationFailed?.Invoke(this, message);

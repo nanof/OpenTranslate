@@ -29,9 +29,23 @@ public partial class TranslationTooltipWindow : Window
     public void SetPending(bool spinnerOnly = false)
     {
         _closeOnDeactivate = !spinnerOnly;
+
+        if (spinnerOnly)
+        {
+            // Compact, circular badge that hugs the spinner instead of a large boxy tooltip.
+            RootBorder.Padding = new Thickness(8);
+            RootBorder.CornerRadius = new CornerRadius(999);
+            SpinnerHost.Margin = new Thickness(0);
+        }
+        else
+        {
+            RootBorder.Padding = new Thickness(10);
+            RootBorder.CornerRadius = new CornerRadius(8);
+            SpinnerHost.Margin = new Thickness(0, 0, 8, 0);
+        }
+
         PendingPanel.Visibility = Visibility.Visible;
         PendingText.Visibility = spinnerOnly ? Visibility.Collapsed : Visibility.Visible;
-        SpinnerHost.Margin = spinnerOnly ? new Thickness(0) : new Thickness(0, 0, 8, 0);
         TranslationText.Visibility = Visibility.Collapsed;
         ActionPanel.Visibility = Visibility.Collapsed;
     }
@@ -39,6 +53,8 @@ public partial class TranslationTooltipWindow : Window
     public void SetTranslation(string text)
     {
         _closeOnDeactivate = true;
+        RootBorder.Padding = new Thickness(10);
+        RootBorder.CornerRadius = new CornerRadius(8);
         PendingPanel.Visibility = Visibility.Collapsed;
         TranslationText.Visibility = Visibility.Visible;
         TranslationText.Text = text;

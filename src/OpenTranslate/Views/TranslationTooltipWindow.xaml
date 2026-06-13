@@ -11,16 +11,17 @@
         MaxWidth="420"
         KeyDown="OnKeyDown"
         Deactivated="OnDeactivated">
-    <Border Background="#313244"
+    <Border x:Name="RootBorder"
+            Background="#313244"
             BorderBrush="#45475A"
             BorderThickness="1"
             CornerRadius="8"
             Padding="10"
             MaxWidth="420">
         <Border.Effect>
-            <DropShadowEffect BlurRadius="14"
+            <DropShadowEffect BlurRadius="16"
                               ShadowDepth="2"
-                              Opacity="0.45"
+                              Opacity="0.5"
                               Color="Black" />
         </Border.Effect>
         <StackPanel>
@@ -28,34 +29,39 @@
                         Orientation="Horizontal"
                         Visibility="Collapsed">
                 <Grid x:Name="SpinnerHost"
-                      Width="14"
-                      Height="14"
+                      Width="16"
+                      Height="16"
                       Margin="0,0,8,0"
-                      VerticalAlignment="Center"
-                      RenderTransformOrigin="0.5,0.5">
-                    <Grid.RenderTransform>
-                        <RotateTransform x:Name="SpinnerRotate" />
-                    </Grid.RenderTransform>
-                    <Ellipse Width="12"
-                             Height="12"
+                      VerticalAlignment="Center">
+                    <Ellipse Width="16"
+                             Height="16"
+                             Stroke="#45475A"
+                             StrokeThickness="2" />
+                    <Ellipse Width="16"
+                             Height="16"
                              Stroke="#89B4FA"
                              StrokeThickness="2"
-                             StrokeDashArray="2.5 5.5"
+                             StrokeDashArray="18.8 6.4"
                              StrokeStartLineCap="Round"
-                             StrokeEndLineCap="Round" />
-                    <Grid.Triggers>
-                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
-                            <BeginStoryboard>
-                                <Storyboard RepeatBehavior="Forever">
-                                    <DoubleAnimation Storyboard.TargetName="SpinnerRotate"
-                                                     Storyboard.TargetProperty="Angle"
-                                                     From="0"
-                                                     To="360"
-                                                     Duration="0:0:0.85" />
-                                </Storyboard>
-                            </BeginStoryboard>
-                        </EventTrigger>
-                    </Grid.Triggers>
+                             StrokeEndLineCap="Round"
+                             RenderTransformOrigin="0.5,0.5">
+                        <Ellipse.RenderTransform>
+                            <RotateTransform x:Name="SpinnerRotate" />
+                        </Ellipse.RenderTransform>
+                        <Ellipse.Triggers>
+                            <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                <BeginStoryboard>
+                                    <Storyboard RepeatBehavior="Forever">
+                                        <DoubleAnimation Storyboard.TargetName="SpinnerRotate"
+                                                         Storyboard.TargetProperty="Angle"
+                                                         From="0"
+                                                         To="360"
+                                                         Duration="0:0:0.9" />
+                                    </Storyboard>
+                                </BeginStoryboard>
+                            </EventTrigger>
+                        </Ellipse.Triggers>
+                    </Ellipse>
                 </Grid>
                 <TextBlock x:Name="PendingText"
                            Text="Translating…"
