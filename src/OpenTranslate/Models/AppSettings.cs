@@ -6,6 +6,12 @@ public sealed class AppSettings
     public const string DefaultOpenAiModel = "gpt-4o-mini";
     public const string DefaultGeminiModel = "gemini-3.1-flash-lite";
     public const double DefaultTooltipFontSize = 13;
+    public const double DefaultTooltipWidth = 400;
+    public const double DefaultTooltipHeight = 260;
+    public const double MinTooltipWidth = 220;
+    public const double MinTooltipHeight = 100;
+    public const double MaxTooltipWidth = 800;
+    public const double MaxTooltipHeight = 700;
 
     public TranslationProvider Provider { get; set; } = TranslationProvider.MyMemory;
     public Dictionary<TranslationProvider, string> ApiKeys { get; set; } = [];
@@ -19,6 +25,8 @@ public sealed class AppSettings
     public bool TypewriterPaste { get; set; } = true;
     public bool PreserveFormatAndCode { get; set; } = true;
     public double TooltipFontSize { get; set; } = DefaultTooltipFontSize;
+    public double TooltipWidth { get; set; }
+    public double TooltipHeight { get; set; }
     public ActivationShortcut ActivationShortcut { get; set; } = ActivationShortcut.Default;
 
     public string GetApiKey(TranslationProvider provider) =>
@@ -50,6 +58,8 @@ public sealed class AppSettings
         TypewriterPaste = TypewriterPaste,
         PreserveFormatAndCode = PreserveFormatAndCode,
         TooltipFontSize = TooltipFontSize,
+        TooltipWidth = TooltipWidth,
+        TooltipHeight = TooltipHeight,
         ActivationShortcut = ActivationShortcut
     };
 }

@@ -20,11 +20,45 @@ public static class TranslationTooltipService
     private static AppSettings? _variantSettings;
     private static TranslationClient? _variantClient;
     private static UsageTrackingService? _usageTracking;
+    private static SecureSettingsStore? _settingsStore;
     private static TextImprovementMode _activeVariantMode = TextImprovementMode.None;
     private static readonly Dictionary<TextImprovementMode, string> _variantCache = [];
 
     public static void SetUsageTracking(UsageTrackingService usageTracking) =>
         _usageTracking = usageTracking;
+
+    public static void SetSettingsStore(SecureSettingsStore settingsStore) =>
+        _settingsStore = settingsStore;
+
+    public static (double Width, double Height) GetSavedSize()
+    {
+        var settings = _settingsStore?.Load();
+        if (settings is null)
+            return (0, 0);
+
+        var width = settings.TooltipWidth;
+        var height = settings.TooltipHeight;
+        if (width <= 0 || height <= 0)
+            return (0, 0);
+
+        return (
+            Math.Clamp(width, AppSettings.MinTooltipWidth, AppSettings.MaxTooltipWidth),
+            Math.Clamp(height, AppSettings.MinTooltipHeight, AppSettings.MaxTooltipHeight));
+    }
+
+    public static void SaveTooltipSize(double width, double height)
+    {
+        if (_settingsStore is null)
+            return;
+
+        width = Math.Clamp(width, AppSettings.MinTooltipWidth, AppSettings.MaxTooltipWidth);
+        height = Math.Clamp(height, AppSettings.MinTooltipHeight, AppSettings.MaxTooltipHeight);
+
+        var settings = _settingsStore.Load();
+        settings.TooltipWidth = width;
+        settings.TooltipHeight = height;
+        _settingsStore.Save(settings);
+    }
 
     public static bool VariantsAvailable { get; private set; }
 
@@ -231,9 +265,25 @@ public static class TranslationTooltipService
         var cursor = System.Windows.Forms.Cursor.Position;
         var workArea = System.Windows.Forms.Screen.FromPoint(cursor).WorkingArea;
 
-        window.Measure(new WpfSize(double.PositiveInfinity, double.PositiveInfinity));
-        var width = window.DesiredSize.Width;
-        var height = window.DesiredSize.Height;
+        window.UpdateLayout();
+
+        var width = window.ActualWidth > 0
+            ? window.ActualWidth
+            : !double.IsNaN(window.Width) && window.Width > 0
+                ? window.Width
+                : 0;
+        var height = window.ActualHeight > 0
+            ? window.ActualHeight
+            : !double.IsNaN(window.Height) && window.Height > 0
+                ? window.Height
+                : 0;
+
+        if (width <= 0 || height <= 0)
+        {
+            window.Measure(new WpfSize(double.PositiveInfinity, double.PositiveInfinity));
+            width = window.DesiredSize.Width;
+            height = window.DesiredSize.Height;
+        }
 
         var left = (double)cursor.X + offset;
         var top = (double)cursor.Y + offset;

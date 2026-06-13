@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using OpenTranslate.Models;
@@ -22,6 +23,13 @@ public partial class TranslationTooltipWindow : Window
     private const double EntranceBackAmplitude = 0.35;
     private const double EntranceDurationMs = 111;
     private const double EntranceFadeMs = 102;
+    private const double DefaultContentWidth = AppSettings.DefaultTooltipWidth;
+    private const double DefaultContentHeight = AppSettings.DefaultTooltipHeight;
+    private const double MaxInitialContentWidth = 420;
+    private const double MaxInitialContentHeight = 320;
+    private const int ResizeBorderPixels = 6;
+    private const double TranslationMinWidth = AppSettings.MinTooltipWidth;
+    private const double TranslationMinHeight = AppSettings.MinTooltipHeight;
 
     // A Matrix-style spinner: a single glyph that flickers through characters from
     // Japanese (katakana + hiragana), Greek and Latin scripts.
@@ -44,6 +52,9 @@ public partial class TranslationTooltipWindow : Window
 
     private bool _isClosing;
     private bool _closeOnDeactivate = true;
+    private bool _isSpinnerCompact;
+    private bool _applyingInitialSize;
+    private System.Windows.Size? _lastUserSize;
 
     public TranslationTooltipWindow(
         string translation,
@@ -63,9 +74,23 @@ public partial class TranslationTooltipWindow : Window
             SetTranslation(translation, canReplace, canShowModes, activeMode);
 
         Loaded += OnLoaded;
+        SizeChanged += OnSizeChanged;
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e) => PlayEntranceAnimation();
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        var source = PresentationSource.FromVisual(this) as HwndSource;
+        source?.AddHook(WndProc);
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        if (TranslationText.Visibility == Visibility.Visible)
+            EnableResizingWithInitialSize();
+
+        PlayEntranceAnimation();
+    }
 
     // macOS / iOS style entrance: a gentle fade combined with a springy "pop" scale
     // and a subtle upward slide, so the tooltip feels like it grows out near the cursor.
@@ -91,19 +116,39 @@ public partial class TranslationTooltipWindow : Window
     public void SetPending(bool spinnerOnly = false)
     {
         _closeOnDeactivate = !spinnerOnly;
+        _isSpinnerCompact = spinnerOnly;
+        DisableResizing();
 
         if (spinnerOnly)
         {
             // Compact, circular badge that hugs the spinner instead of a large boxy tooltip.
             RootBorder.Padding = new Thickness(8);
             RootBorder.CornerRadius = new CornerRadius(999);
+            RootBorder.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+            RootBorder.VerticalAlignment = VerticalAlignment.Center;
             SpinnerHost.Margin = new Thickness(0);
+            ResizeGripHint.Visibility = Visibility.Collapsed;
+            TextRow.Height = new GridLength(0);
+            TextRow.MinHeight = 0;
+            MinWidth = 0;
+            MinHeight = 0;
+            // Let the window hug the spinner. We can't fix Width/Height to ActualWidth here
+            // because this runs during construction (before the window is shown), so the
+            // measured size would be 0 and the badge would never appear.
+            Width = double.NaN;
+            Height = double.NaN;
+            SizeToContent = SizeToContent.WidthAndHeight;
         }
         else
         {
             RootBorder.Padding = new Thickness(10);
             RootBorder.CornerRadius = new CornerRadius(8);
+            RootBorder.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+            RootBorder.VerticalAlignment = VerticalAlignment.Stretch;
             SpinnerHost.Margin = new Thickness(0, 0, 8, 0);
+            ResizeGripHint.Visibility = Visibility.Collapsed;
+            RestoreTranslationLayout();
+            ApplyCompactPendingSize();
         }
 
         PendingPanel.Visibility = Visibility.Visible;
@@ -121,11 +166,23 @@ public partial class TranslationTooltipWindow : Window
         TextImprovementMode activeMode = TextImprovementMode.None)
     {
         var wasPending = PendingPanel.Visibility == Visibility.Visible;
+        var willReplayEntrance = wasPending && IsLoaded;
+
+        // Snap to the hidden pre-entrance state (opacity 0) BEFORE any resizing or content
+        // swap. Otherwise the window — still fully opaque from the spinner's finished
+        // entrance — would resize to the full translation size for one visible frame
+        // before the animation resets it, producing a "full-size flash" glitch.
+        if (willReplayEntrance)
+            ResetToEntranceStart();
 
         _closeOnDeactivate = true;
+        _isSpinnerCompact = false;
         StopGlyphSpinner();
         RootBorder.Padding = new Thickness(10);
         RootBorder.CornerRadius = new CornerRadius(8);
+        RootBorder.HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch;
+        RootBorder.VerticalAlignment = VerticalAlignment.Stretch;
+        RestoreTranslationLayout();
         PendingPanel.Visibility = Visibility.Collapsed;
         TranslationText.Visibility = Visibility.Visible;
         TranslationText.Text = text;
@@ -143,22 +200,189 @@ public partial class TranslationTooltipWindow : Window
 
         ModesButton.Visibility = canShowModes ? Visibility.Visible : Visibility.Collapsed;
         ModesPanelBorder.Visibility = Visibility.Collapsed;
+        ResizeGripHint.Visibility = Visibility.Visible;
+
+        EnableResizingWithInitialSize();
 
         // When swapping the spinner for the actual result, replay the full entrance
         // "pop" so the translation animates in (not just the tiny spinner badge that
-        // was shown while the request was pending).
-        if (wasPending && IsLoaded)
-        {
-            // Snap back to the hidden pre-entrance state synchronously. The spinner's
-            // finished animation otherwise holds the final look (opacity 1, scale 1),
-            // which would flash on screen for a frame before the replay resets it.
-            ResetToEntranceStart();
-
-            // The window resizes to fit the new content; defer the animation until layout
-            // settles so the scale/slide animate against the final size. It stays hidden
-            // (opacity 0) during that gap, so there's no glitch.
+        // was shown while the request was pending). The window already resized while
+        // hidden (opacity 0), so defer the animation until layout settles to scale/slide
+        // against the final size without any glitch.
+        if (willReplayEntrance)
             Dispatcher.BeginInvoke(PlayEntranceAnimation, DispatcherPriority.Loaded);
+    }
+
+    private void DisableResizing()
+    {
+        ResizeMode = ResizeMode.NoResize;
+        SizeToContent = SizeToContent.Manual;
+        ResizeGripHint.Visibility = Visibility.Collapsed;
+    }
+
+    private void ApplyCompactPendingSize()
+    {
+        MinWidth = 0;
+        MinHeight = 0;
+        Width = double.NaN;
+        Height = double.NaN;
+        SizeToContent = SizeToContent.WidthAndHeight;
+    }
+
+    private void RestoreTranslationLayout()
+    {
+        MinWidth = TranslationMinWidth;
+        MinHeight = TranslationMinHeight;
+        TextRow.Height = new GridLength(1, GridUnitType.Star);
+        TextRow.MinHeight = 40;
+    }
+
+    private void EnableResizingWithInitialSize()
+    {
+        _applyingInitialSize = true;
+        try
+        {
+            RestoreTranslationLayout();
+            ResizeMode = ResizeMode.CanResize;
+
+            var (savedWidth, savedHeight) = TranslationTooltipService.GetSavedSize();
+            if (savedWidth > 0 && savedHeight > 0)
+            {
+                // Switch to manual sizing FIRST; otherwise (e.g. coming from the spinner,
+                // which uses SizeToContent=WidthAndHeight) the Width/Height assignments are
+                // ignored and the saved size never gets applied.
+                SizeToContent = SizeToContent.Manual;
+                Width = savedWidth;
+                Height = savedHeight;
+                ResizeGripHint.Visibility = Visibility.Visible;
+                return;
+            }
+
+            SizeToContent = SizeToContent.WidthAndHeight;
+            Width = double.NaN;
+            Height = double.NaN;
+            UpdateLayout();
+
+            var initialWidth = Math.Clamp(
+                ActualWidth > 0 ? ActualWidth : DefaultContentWidth,
+                TranslationMinWidth,
+                MaxInitialContentWidth);
+            var initialHeight = Math.Clamp(
+                ActualHeight > 0 ? ActualHeight : DefaultContentHeight,
+                TranslationMinHeight,
+                MaxInitialContentHeight);
+
+            SizeToContent = SizeToContent.Manual;
+            Width = initialWidth;
+            Height = initialHeight;
+            ResizeGripHint.Visibility = Visibility.Visible;
         }
+        finally
+        {
+            _applyingInitialSize = false;
+        }
+    }
+
+    // Captures every size change the user makes (ignoring the programmatic initial sizing),
+    // so the latest dimensions can be persisted reliably when the tooltip closes.
+    private void OnSizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (_applyingInitialSize || _isSpinnerCompact)
+            return;
+
+        if (ResizeMode != ResizeMode.CanResize || SizeToContent != SizeToContent.Manual)
+            return;
+
+        if (ActualWidth >= TranslationMinWidth && ActualHeight >= TranslationMinHeight)
+            _lastUserSize = new System.Windows.Size(ActualWidth, ActualHeight);
+    }
+
+    private void PersistTooltipSize()
+    {
+        if (_isSpinnerCompact)
+            return;
+
+        var width = _lastUserSize?.Width ?? ActualWidth;
+        var height = _lastUserSize?.Height ?? ActualHeight;
+
+        if (width >= TranslationMinWidth && height >= TranslationMinHeight)
+            TranslationTooltipService.SaveTooltipSize(width, height);
+    }
+
+    private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+    {
+        const int wmNcHitTest = 0x0084;
+        const int htLeft = 10;
+        const int htRight = 11;
+        const int htTop = 12;
+        const int htTopLeft = 13;
+        const int htTopRight = 14;
+        const int htBottom = 15;
+        const int htBottomLeft = 16;
+        const int htBottomRight = 17;
+
+        if (msg != wmNcHitTest || ResizeMode != ResizeMode.CanResize)
+            return IntPtr.Zero;
+
+        var screenPoint = new System.Windows.Point(
+            (short)(lParam.ToInt64() & 0xFFFF),
+            (short)((lParam.ToInt64() >> 16) & 0xFFFF));
+        var windowPoint = PointFromScreen(screenPoint);
+
+        var left = windowPoint.X <= ResizeBorderPixels;
+        var right = windowPoint.X >= ActualWidth - ResizeBorderPixels;
+        var top = windowPoint.Y <= ResizeBorderPixels;
+        var bottom = windowPoint.Y >= ActualHeight - ResizeBorderPixels;
+
+        if (left && top)
+        {
+            handled = true;
+            return (IntPtr)htTopLeft;
+        }
+
+        if (right && top)
+        {
+            handled = true;
+            return (IntPtr)htTopRight;
+        }
+
+        if (left && bottom)
+        {
+            handled = true;
+            return (IntPtr)htBottomLeft;
+        }
+
+        if (right && bottom)
+        {
+            handled = true;
+            return (IntPtr)htBottomRight;
+        }
+
+        if (left)
+        {
+            handled = true;
+            return (IntPtr)htLeft;
+        }
+
+        if (right)
+        {
+            handled = true;
+            return (IntPtr)htRight;
+        }
+
+        if (top)
+        {
+            handled = true;
+            return (IntPtr)htTop;
+        }
+
+        if (bottom)
+        {
+            handled = true;
+            return (IntPtr)htBottom;
+        }
+
+        return IntPtr.Zero;
     }
 
     private void ResetToEntranceStart()
@@ -219,6 +443,7 @@ public partial class TranslationTooltipWindow : Window
     protected override void OnClosing(CancelEventArgs e)
     {
         _isClosing = true;
+        PersistTooltipSize();
         StopGlyphSpinner();
         _variantCts?.Cancel();
         _variantCts?.Dispose();

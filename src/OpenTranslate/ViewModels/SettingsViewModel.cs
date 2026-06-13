@@ -546,6 +546,7 @@ public partial class SettingsViewModel : ObservableObject
     private AppSettings BuildSettingsFromViewModel()
     {
         ActivationShortcut.DoublePress = ShortcutDoublePress;
+        var current = _settingsStore.Load();
 
         var settings = new AppSettings
         {
@@ -564,6 +565,8 @@ public partial class SettingsViewModel : ObservableObject
             TypewriterPaste = TypewriterPaste,
             PreserveFormatAndCode = PreserveFormatAndCode,
             TooltipFontSize = TooltipFontSize,
+            TooltipWidth = current.TooltipWidth,
+            TooltipHeight = current.TooltipHeight,
             ActivationShortcut = ActivationShortcut
         };
 

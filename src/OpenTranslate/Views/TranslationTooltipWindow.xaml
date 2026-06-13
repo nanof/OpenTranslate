@@ -7,8 +7,11 @@
         ShowInTaskbar="False"
         Topmost="True"
         ResizeMode="NoResize"
-        SizeToContent="WidthAndHeight"
-        MaxWidth="420"
+        SizeToContent="Manual"
+        MinWidth="220"
+        MinHeight="100"
+        MaxWidth="800"
+        MaxHeight="700"
         KeyDown="OnKeyDown"
         Deactivated="OnDeactivated">
     <Window.Resources>
@@ -143,7 +146,8 @@
             BorderThickness="1"
             CornerRadius="8"
             Padding="10"
-            MaxWidth="420"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
             Opacity="0"
             RenderTransformOrigin="0,0">
         <Border.RenderTransform>
@@ -162,11 +166,18 @@
                               Opacity="0.5"
                               Color="Black" />
         </Border.Effect>
-        <StackPanel>
+        <Grid x:Name="ContentGrid">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition x:Name="TextRow" Height="*" MinHeight="40" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <StackPanel x:Name="PendingPanel"
-                        Orientation="Horizontal"
-                        Visibility="Collapsed">
-                <Grid x:Name="SpinnerHost"
+                            Grid.Row="0"
+                            Orientation="Horizontal"
+                            Visibility="Collapsed">
+                    <Grid x:Name="SpinnerHost"
                       Width="20"
                       Height="20"
                       Margin="0,0,8,0"
@@ -196,13 +207,14 @@
             </StackPanel>
 
             <TextBox x:Name="TranslationText"
+                     Grid.Row="1"
                      IsReadOnly="True"
                      TextWrapping="Wrap"
                      Background="Transparent"
                      Foreground="#CDD6F4"
                      BorderThickness="0"
                      FontSize="13"
-                     MaxHeight="240"
+                     VerticalAlignment="Stretch"
                      VerticalScrollBarVisibility="Auto">
                 <TextBox.Resources>
                     <Style TargetType="ScrollBar" BasedOn="{StaticResource TooltipScrollBar}" />
@@ -210,6 +222,7 @@
             </TextBox>
 
             <Grid x:Name="ActionPanel"
+                  Grid.Row="2"
                   Margin="0,8,0,0"
                   Visibility="Collapsed">
                 <Button x:Name="ModesButton"
@@ -249,6 +262,7 @@
             </Grid>
 
             <Border x:Name="ModesPanelBorder"
+                    Grid.Row="3"
                     Margin="0,8,0,0"
                     Background="#272736"
                     BorderBrush="#45475A"
@@ -258,6 +272,19 @@
                     Visibility="Collapsed">
                 <StackPanel x:Name="ModesPanel" />
             </Border>
-        </StackPanel>
+
+            <TextBlock x:Name="ResizeGripHint"
+                       Grid.Row="1"
+                       Grid.RowSpan="3"
+                       Text="⤡"
+                       HorizontalAlignment="Right"
+                       VerticalAlignment="Bottom"
+                       Margin="0,0,0,2"
+                       Foreground="#585B70"
+                       FontSize="11"
+                       Opacity="0.65"
+                       IsHitTestVisible="False"
+                       Visibility="Collapsed" />
+        </Grid>
     </Border>
 </Window>

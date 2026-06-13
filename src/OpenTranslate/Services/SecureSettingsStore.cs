@@ -49,6 +49,18 @@ public sealed class SecureSettingsStore
             if (settings.TooltipFontSize <= 0)
                 settings.TooltipFontSize = AppSettings.DefaultTooltipFontSize;
 
+            if (settings.TooltipWidth > 0)
+                settings.TooltipWidth = Math.Clamp(
+                    settings.TooltipWidth,
+                    AppSettings.MinTooltipWidth,
+                    AppSettings.MaxTooltipWidth);
+
+            if (settings.TooltipHeight > 0)
+                settings.TooltipHeight = Math.Clamp(
+                    settings.TooltipHeight,
+                    AppSettings.MinTooltipHeight,
+                    AppSettings.MaxTooltipHeight);
+
             if (!json.Contains("ApiKeys", StringComparison.Ordinal)
                 && json.Contains("\"ApiKey\"", StringComparison.Ordinal))
             {

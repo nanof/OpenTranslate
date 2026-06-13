@@ -46,6 +46,7 @@ public sealed class AppBootstrapper : IDisposable
         _startupService = new WindowsStartupService();
         _usageTracking = new UsageTrackingService(new UsageStatsStore());
         TranslationTooltipService.SetUsageTracking(_usageTracking);
+        TranslationTooltipService.SetSettingsStore(_settingsStore);
         _translationOrchestrator = new TranslationOrchestrator(
             _settingsStore,
             _translationClient,
