@@ -132,6 +132,11 @@ public partial class TranslationTooltipWindow : Window
         ActionPanel.Visibility = Visibility.Visible;
         ReplaceButton.Visibility = canReplace ? Visibility.Visible : Visibility.Collapsed;
 
+        // Pressing Enter triggers the default button: "Replace" when it's available,
+        // otherwise "Copy" is the fallback default.
+        ReplaceButton.IsDefault = canReplace;
+        CopyButton.IsDefault = !canReplace;
+
         _activeMode = activeMode;
         if (canShowModes)
             BuildModesPanel(activeMode);
@@ -360,6 +365,7 @@ public partial class TranslationTooltipWindow : Window
         TranslationText.SelectAll();
         TranslationText.Copy();
         TranslationText.SelectionLength = 0;
+        CloseSafely();
     }
 
     private async void OnReplace(object sender, RoutedEventArgs e)
@@ -374,12 +380,7 @@ public partial class TranslationTooltipWindow : Window
         }
         finally
         {
-            if (IsVisible)
-            {
-                ReplaceButton.IsEnabled = true;
-                CopyButton.IsEnabled = true;
-                _closeOnDeactivate = true;
-            }
+            CloseSafely();
         }
     }
 }
