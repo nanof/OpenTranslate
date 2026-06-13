@@ -27,7 +27,8 @@ public partial class TranslationTooltipWindow : Window
         string translation,
         double fontSize,
         bool isPending = false,
-        bool spinnerOnly = false)
+        bool spinnerOnly = false,
+        bool canReplace = false)
     {
         InitializeComponent();
         TranslationText.FontSize = fontSize;
@@ -35,7 +36,7 @@ public partial class TranslationTooltipWindow : Window
         if (isPending)
             SetPending(spinnerOnly);
         else
-            SetTranslation(translation);
+            SetTranslation(translation, canReplace);
     }
 
     public void SetPending(bool spinnerOnly = false)
@@ -64,7 +65,7 @@ public partial class TranslationTooltipWindow : Window
         StartGlyphSpinner();
     }
 
-    public void SetTranslation(string text)
+    public void SetTranslation(string text, bool canReplace = false)
     {
         _closeOnDeactivate = true;
         StopGlyphSpinner();
@@ -74,6 +75,13 @@ public partial class TranslationTooltipWindow : Window
         TranslationText.Visibility = Visibility.Visible;
         TranslationText.Text = text;
         ActionPanel.Visibility = Visibility.Visible;
+        ReplaceButton.Visibility = canReplace ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    public void FocusForInteraction()
+    {
+        Activate();
+        Focus();
     }
 
     private void StartGlyphSpinner()

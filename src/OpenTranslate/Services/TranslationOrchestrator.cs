@@ -381,12 +381,17 @@ public sealed class TranslationOrchestrator
                     ? targetControl
                     : InputSimulationService.GetFocusedControl(tooltipWindow);
 
+                // The tooltip is only shown for non-editable targets, so a paste-back would not
+                // work; hide the Replace action in that case.
+                var canReplace = ResolveEditability(tooltipWindow, tooltipControl);
+
                 TranslationTooltipService.Update(
                     TextFormattingHelper.NormalizeForTranslation(translated),
                     tooltipFontSize,
                     tooltipWindow,
                     tooltipControl,
-                    replaceAll);
+                    replaceAll,
+                    canReplace);
                 return;
             }
 

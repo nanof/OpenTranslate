@@ -38,12 +38,13 @@ public static class TranslationTooltipService
         double fontSize,
         nint targetWindow = 0,
         nint targetControl = 0,
-        bool replaceAll = false)
+        bool replaceAll = false,
+        bool canReplace = false)
     {
         var dispatcher = WpfApplication.Current.Dispatcher;
         if (!dispatcher.CheckAccess())
         {
-            dispatcher.Invoke(() => Update(translation, fontSize, targetWindow, targetControl, replaceAll));
+            dispatcher.Invoke(() => Update(translation, fontSize, targetWindow, targetControl, replaceAll, canReplace));
             return;
         }
 
@@ -51,11 +52,14 @@ public static class TranslationTooltipService
 
         if (_current is { IsVisible: true })
         {
-            _current.SetTranslation(translation);
+            _current.SetTranslation(translation, canReplace);
+            // The pending spinner was shown without focus; grab focus now so the user can
+            // dismiss the result with ESC.
+            _current.FocusForInteraction();
             return;
         }
 
-        OpenTranslation(translation, fontSize);
+        OpenTranslation(translation, fontSize, canReplace);
     }
 
     public static async Task<bool> ApplyReplaceAsync()
@@ -112,8 +116,8 @@ public static class TranslationTooltipService
             () => new TranslationTooltipWindow(string.Empty, fontSize, isPending: true, spinnerOnly),
             activate: !spinnerOnly);
 
-    private static void OpenTranslation(string translation, double fontSize) =>
-        Open(() => new TranslationTooltipWindow(translation, fontSize));
+    private static void OpenTranslation(string translation, double fontSize, bool canReplace) =>
+        Open(() => new TranslationTooltipWindow(translation, fontSize, canReplace: canReplace));
 
     private static void Open(Func<TranslationTooltipWindow> createWindow, bool activate = true)
     {
