@@ -409,7 +409,7 @@ public partial class TranslationTooltipWindow : Window
         if (_glyphTimer is not null)
             return;
 
-        _glyphTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(90) };
+        _glyphTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(20) };
         _glyphTimer.Tick += OnGlyphTick;
         _glyphTimer.Start();
         OnGlyphTick(this, EventArgs.Empty);
