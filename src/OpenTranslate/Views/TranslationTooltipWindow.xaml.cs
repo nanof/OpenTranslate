@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using OpenTranslate.Services;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -9,6 +10,12 @@ namespace OpenTranslate.Views;
 
 public partial class TranslationTooltipWindow : Window
 {
+    private const double EntranceInitialScale = 0.35;
+    private const double EntranceInitialSlide = 10;
+    private const double EntranceBackAmplitude = 0.35;
+    private const double EntranceDurationMs = 111;
+    private const double EntranceFadeMs = 102;
+
     // A Matrix-style spinner: a single glyph that flickers through characters from
     // Japanese (katakana + hiragana), Greek and Latin scripts.
     private static readonly string[] SpinnerGlyphs = BuildGlyphs(
@@ -37,6 +44,31 @@ public partial class TranslationTooltipWindow : Window
             SetPending(spinnerOnly);
         else
             SetTranslation(translation, canReplace);
+
+        Loaded += OnLoaded;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e) => PlayEntranceAnimation();
+
+    // macOS / iOS style entrance: a gentle fade combined with a springy "pop" scale
+    // and a subtle upward slide, so the tooltip feels like it grows out near the cursor.
+    private void PlayEntranceAnimation()
+    {
+        var ease = new BackEase { EasingMode = EasingMode.EaseOut, Amplitude = EntranceBackAmplitude };
+        var duration = TimeSpan.FromMilliseconds(EntranceDurationMs);
+
+        var fade = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(EntranceFadeMs))
+        {
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+
+        var scale = new DoubleAnimation(EntranceInitialScale, 1, duration) { EasingFunction = ease };
+        var slide = new DoubleAnimation(EntranceInitialSlide, 0, duration) { EasingFunction = ease };
+
+        RootBorder.BeginAnimation(OpacityProperty, fade);
+        RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, scale);
+        RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, scale);
+        RootTranslate.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, slide);
     }
 
     public void SetPending(bool spinnerOnly = false)
@@ -67,6 +99,8 @@ public partial class TranslationTooltipWindow : Window
 
     public void SetTranslation(string text, bool canReplace = false)
     {
+        var wasPending = PendingPanel.Visibility == Visibility.Visible;
+
         _closeOnDeactivate = true;
         StopGlyphSpinner();
         RootBorder.Padding = new Thickness(10);
@@ -76,6 +110,35 @@ public partial class TranslationTooltipWindow : Window
         TranslationText.Text = text;
         ActionPanel.Visibility = Visibility.Visible;
         ReplaceButton.Visibility = canReplace ? Visibility.Visible : Visibility.Collapsed;
+
+        // When swapping the spinner for the actual result, replay the full entrance
+        // "pop" so the translation animates in (not just the tiny spinner badge that
+        // was shown while the request was pending).
+        if (wasPending && IsLoaded)
+        {
+            // Snap back to the hidden pre-entrance state synchronously. The spinner's
+            // finished animation otherwise holds the final look (opacity 1, scale 1),
+            // which would flash on screen for a frame before the replay resets it.
+            ResetToEntranceStart();
+
+            // The window resizes to fit the new content; defer the animation until layout
+            // settles so the scale/slide animate against the final size. It stays hidden
+            // (opacity 0) during that gap, so there's no glitch.
+            Dispatcher.BeginInvoke(PlayEntranceAnimation, DispatcherPriority.Loaded);
+        }
+    }
+
+    private void ResetToEntranceStart()
+    {
+        RootBorder.BeginAnimation(OpacityProperty, null);
+        RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleXProperty, null);
+        RootScale.BeginAnimation(System.Windows.Media.ScaleTransform.ScaleYProperty, null);
+        RootTranslate.BeginAnimation(System.Windows.Media.TranslateTransform.YProperty, null);
+
+        RootBorder.Opacity = 0;
+        RootScale.ScaleX = EntranceInitialScale;
+        RootScale.ScaleY = EntranceInitialScale;
+        RootTranslate.Y = EntranceInitialSlide;
     }
 
     public void FocusForInteraction()

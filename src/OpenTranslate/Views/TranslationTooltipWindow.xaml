@@ -17,7 +17,19 @@
             BorderThickness="1"
             CornerRadius="8"
             Padding="10"
-            MaxWidth="420">
+            MaxWidth="420"
+            Opacity="0"
+            RenderTransformOrigin="0,0">
+        <Border.RenderTransform>
+            <TransformGroup>
+                <ScaleTransform x:Name="RootScale"
+                                ScaleX="0.35"
+                                ScaleY="0.35" />
+                <TranslateTransform x:Name="RootTranslate"
+                                    X="0"
+                                    Y="10" />
+            </TransformGroup>
+        </Border.RenderTransform>
         <Border.Effect>
             <DropShadowEffect BlurRadius="16"
                               ShadowDepth="2"
