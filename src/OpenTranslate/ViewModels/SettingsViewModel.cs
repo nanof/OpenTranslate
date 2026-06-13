@@ -128,6 +128,11 @@ public partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<TextImprovementOption> AvailableImprovements => TextImprovementModes.SettingsOptions;
 
+    public string AppVersion =>
+        $"Version {typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0"}";
+
+    public string ProjectUrl => "https://github.com/nanof/OpenTranslate";
+
     public event EventHandler? SettingsSaved;
 
     public SettingsViewModel(

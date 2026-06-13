@@ -11,7 +11,7 @@
     <AssemblyName>OpenTranslate</AssemblyName>
     <Product>OpenTranslate</Product>
     <Description>Windows clipboard translator powered by OpenRouter, OpenAI, or Gemini.</Description>
-    <Copyright>Copyright © OpenTranslate contributors</Copyright>
+    <Copyright>Copyright © Ignacio Martínez</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

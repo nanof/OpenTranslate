@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Windows;
+using System.Windows.Navigation;
 using OpenTranslate.ViewModels;
 
 namespace OpenTranslate.Views;
@@ -25,5 +27,11 @@ public partial class SettingsWindow : Window
         var dialog = new HotkeyCaptureDialog { Owner = this };
         if (dialog.ShowDialog() == true && dialog.CapturedShortcut is not null)
             viewModel.ApplyCapturedShortcut(dialog.CapturedShortcut);
+    }
+
+    private void OnOpenLink(object sender, RequestNavigateEventArgs e)
+    {
+        Process.Start(new ProcessStartInfo(e.Uri.AbsoluteUri) { UseShellExecute = true });
+        e.Handled = true;
     }
 }
