@@ -363,6 +363,24 @@ public sealed class TranslationClient : IDisposable
                    $"Return only the improved text, with no explanations or quotes. Preserve line breaks. {blankLineRule}{preservationRule}";
         }
 
+        if (settings.ImprovementMode == TextImprovementMode.Summarize)
+        {
+            return $"Summarize the following text concisely in {target}. Capture the key points. " +
+                   $"Return only the summary, with no explanations or quotes. {blankLineRule}{preservationRule}";
+        }
+
+        if (settings.ImprovementMode == TextImprovementMode.ExplainInTarget)
+        {
+            return $"Explain the following text clearly in {target}, as if helping someone understand it. " +
+                   $"Return only the explanation, with no preamble or quotes. {blankLineRule}{preservationRule}";
+        }
+
+        if (settings.ImprovementMode == TextImprovementMode.ExplainInSource)
+        {
+            return $"Explain the following text clearly in {source}, as if helping someone understand it. " +
+                   $"Return only the explanation, with no preamble or quotes. {blankLineRule}{preservationRule}";
+        }
+
         var task = settings.AutoDetectLanguage
             ? $"Detect whether the text is in {source} or {target}. " +
               $"If it is in {source}, translate it to {target}. " +

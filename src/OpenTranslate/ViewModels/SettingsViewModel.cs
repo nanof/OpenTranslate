@@ -126,7 +126,7 @@ public partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<TranslationProviderOption> AvailableProviders => TranslationProviders.Options;
 
-    public IReadOnlyList<TextImprovementOption> AvailableImprovements => TextImprovementModes.Options;
+    public IReadOnlyList<TextImprovementOption> AvailableImprovements => TextImprovementModes.SettingsOptions;
 
     public event EventHandler? SettingsSaved;
 

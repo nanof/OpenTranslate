@@ -259,7 +259,7 @@ public partial class TranslationTooltipWindow : Window
 
         var optionStyle = (Style)FindResource("ModeOptionButton");
 
-        foreach (var option in TextImprovementModes.Options)
+        foreach (var option in TranslationTooltipService.GetTooltipVariantOptions())
         {
             var button = new Button
             {

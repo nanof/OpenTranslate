@@ -30,6 +30,11 @@ public static class TranslationTooltipService
 
     public static TextImprovementMode ActiveVariantMode => _activeVariantMode;
 
+    public static IReadOnlyList<TextImprovementOption> GetTooltipVariantOptions() =>
+        _variantSettings is null
+            ? TextImprovementModes.SettingsOptions
+            : TextImprovementModes.GetTooltipOptions(_variantSettings);
+
     public static void ShowPending(double fontSize, bool spinnerOnly = false)
     {
         var dispatcher = WpfApplication.Current.Dispatcher;

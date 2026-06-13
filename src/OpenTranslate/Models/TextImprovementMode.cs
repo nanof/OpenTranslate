@@ -11,5 +11,8 @@ public enum TextImprovementMode
     Concise,
     Formal,
     Informal,
-    ImproveOnly
+    ImproveOnly,
+    Summarize,
+    ExplainInTarget,
+    ExplainInSource
 }
