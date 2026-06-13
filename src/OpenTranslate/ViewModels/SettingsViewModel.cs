@@ -15,6 +15,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly TranslationClient _translationClient;
     private readonly ModelCatalogService _modelCatalog;
     private readonly WindowsStartupService _startupService;
+    private readonly UsageTrackingService _usageTracking;
     private TranslationProvider _previousProvider = TranslationProvider.OpenRouter;
     private bool _isSyncingProvider;
     private bool _isSyncingModel;
@@ -110,6 +111,9 @@ public partial class SettingsViewModel : ObservableObject
     private string _statusMessage = "";
 
     [ObservableProperty]
+    private string _usageSummary = "";
+
+    [ObservableProperty]
     private bool _isBusy;
 
     [ObservableProperty]
@@ -130,12 +134,14 @@ public partial class SettingsViewModel : ObservableObject
         SecureSettingsStore settingsStore,
         TranslationClient translationClient,
         ModelCatalogService modelCatalog,
-        WindowsStartupService startupService)
+        WindowsStartupService startupService,
+        UsageTrackingService usageTracking)
     {
         _settingsStore = settingsStore;
         _translationClient = translationClient;
         _modelCatalog = modelCatalog;
         _startupService = startupService;
+        _usageTracking = usageTracking;
 
         _filteredModelsView = CollectionViewSource.GetDefaultView(AllModels);
         _filteredModelsView.Filter = FilterModel;
@@ -181,6 +187,21 @@ public partial class SettingsViewModel : ObservableObject
         ShortcutDoublePress = ActivationShortcut.DoublePress;
         UpdateShortcutDisplay();
         UpdateModelPerformanceHint();
+        RefreshUsageSummary();
+    }
+
+    public void RefreshUsageSummary()
+    {
+        var summary = _usageTracking.GetSummary();
+        UsageSummary = _usageTracking.FormatSummary(summary);
+    }
+
+    [RelayCommand]
+    private void ResetUsage()
+    {
+        _usageTracking.Reset();
+        RefreshUsageSummary();
+        StatusMessage = "Usage statistics reset.";
     }
 
     public async Task LoadModelsAsync()

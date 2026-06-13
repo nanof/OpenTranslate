@@ -19,8 +19,12 @@ public static class TranslationTooltipService
     private static string _variantSourceText = "";
     private static AppSettings? _variantSettings;
     private static TranslationClient? _variantClient;
+    private static UsageTrackingService? _usageTracking;
     private static TextImprovementMode _activeVariantMode = TextImprovementMode.None;
     private static readonly Dictionary<TextImprovementMode, string> _variantCache = [];
+
+    public static void SetUsageTracking(UsageTrackingService usageTracking) =>
+        _usageTracking = usageTracking;
 
     public static bool VariantsAvailable { get; private set; }
 
@@ -128,6 +132,7 @@ public static class TranslationTooltipService
         _variantCache[mode] = normalized;
         _activeVariantMode = mode;
         _translation = normalized;
+        _usageTracking?.RecordTranslation(_variantSourceText, normalized);
         return normalized;
     }
 

@@ -12,8 +12,12 @@ public partial class SettingsWindow : Window
         Loaded += OnLoaded;
     }
 
-    private async void OnLoaded(object sender, RoutedEventArgs e) =>
-        await ((SettingsViewModel)DataContext).LoadModelsAsync();
+    private async void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        var viewModel = (SettingsViewModel)DataContext;
+        viewModel.RefreshUsageSummary();
+        await viewModel.LoadModelsAsync();
+    }
 
     private void OnChangeShortcut(object sender, RoutedEventArgs e)
     {

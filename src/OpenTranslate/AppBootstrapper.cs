@@ -19,6 +19,7 @@ public sealed class AppBootstrapper : IDisposable
     private readonly KeyboardHookService? _keyboardHookService;
     private readonly TranslationOrchestrator? _translationOrchestrator;
     private readonly WindowsStartupService? _startupService;
+    private readonly UsageTrackingService? _usageTracking;
     private readonly TrayIconService? _trayService;
     private SettingsWindow? _settingsWindow;
 
@@ -43,11 +44,14 @@ public sealed class AppBootstrapper : IDisposable
         _clipboardService = new ClipboardService();
         _keyboardHookService = new KeyboardHookService();
         _startupService = new WindowsStartupService();
+        _usageTracking = new UsageTrackingService(new UsageStatsStore());
+        TranslationTooltipService.SetUsageTracking(_usageTracking);
         _translationOrchestrator = new TranslationOrchestrator(
             _settingsStore,
             _translationClient,
             _clipboardService,
-            _keyboardHookService);
+            _keyboardHookService,
+            _usageTracking);
 
         _translationOrchestrator.StatusChanged += OnStatusChanged;
         _translationOrchestrator.TranslationFailed += OnTranslationFailed;
@@ -98,7 +102,8 @@ public sealed class AppBootstrapper : IDisposable
             _settingsStore!,
             _translationClient!,
             _modelCatalog!,
-            _startupService!);
+            _startupService!,
+            _usageTracking!);
 
         viewModel.SettingsSaved += (_, _) =>
             ApplyShortcutFromSettings(_settingsStore!.Load());

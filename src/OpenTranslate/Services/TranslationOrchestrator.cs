@@ -13,6 +13,7 @@ public sealed class TranslationOrchestrator
     private readonly TranslationClient _translationClient;
     private readonly ClipboardService _clipboardService;
     private readonly KeyboardHookService _keyboardHookService;
+    private readonly UsageTrackingService _usageTracking;
     private readonly SemaphoreSlim _gate = new(1, 1);
 
     public event EventHandler<string>? StatusChanged;
@@ -22,12 +23,14 @@ public sealed class TranslationOrchestrator
         SecureSettingsStore settingsStore,
         TranslationClient translationClient,
         ClipboardService clipboardService,
-        KeyboardHookService keyboardHookService)
+        KeyboardHookService keyboardHookService,
+        UsageTrackingService usageTracking)
     {
         _settingsStore = settingsStore;
         _translationClient = translationClient;
         _clipboardService = clipboardService;
         _keyboardHookService = keyboardHookService;
+        _usageTracking = usageTracking;
     }
 
     public Task TranslateClipboardAsync(
@@ -114,6 +117,8 @@ public sealed class TranslationOrchestrator
             var translated = await _translationClient
                 .TranslateAsync(source.Text, settings)
                 .ConfigureAwait(false);
+
+            _usageTracking.RecordTranslation(source.Text, translated);
 
             await ApplyTranslationAsync(
                 translated,
