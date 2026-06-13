@@ -17,6 +17,7 @@ public sealed class AppSettings
     public bool StartWithWindows { get; set; }
     public bool PlaySoundOnTranslationStart { get; set; }
     public bool TypewriterPaste { get; set; } = true;
+    public bool PreserveFormatAndCode { get; set; } = true;
     public double TooltipFontSize { get; set; } = DefaultTooltipFontSize;
     public ActivationShortcut ActivationShortcut { get; set; } = ActivationShortcut.Default;
 
@@ -47,6 +48,7 @@ public sealed class AppSettings
         StartWithWindows = StartWithWindows,
         PlaySoundOnTranslationStart = PlaySoundOnTranslationStart,
         TypewriterPaste = TypewriterPaste,
+        PreserveFormatAndCode = PreserveFormatAndCode,
         TooltipFontSize = TooltipFontSize,
         ActivationShortcut = ActivationShortcut
     };

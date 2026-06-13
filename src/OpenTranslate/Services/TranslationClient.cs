@@ -4,6 +4,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using OpenTranslate.Models;
 
 namespace OpenTranslate.Services;
@@ -63,7 +64,7 @@ public sealed class TranslationClient : IDisposable
             throw new TranslationApiException(0, TranslationProviders.GetApiKeyMissingMessage(provider));
 
         var model = settings.GetEffectiveModel();
-        var protectedText = TextFormattingHelper.ProtectBlankLines(text);
+        var protection = TextFormattingHelper.ProtectForTranslation(text, settings.PreserveFormatAndCode);
         var systemPrompt = BuildSystemPrompt(settings);
 
         var requestBody = new ChatCompletionRequest
@@ -79,7 +80,7 @@ public sealed class TranslationClient : IDisposable
                 new ChatMessage
                 {
                     Role = "user",
-                    Content = protectedText
+                    Content = protection.Text
                 }
             ]
         };
@@ -95,7 +96,7 @@ public sealed class TranslationClient : IDisposable
 
         var payload = await response.Content.ReadFromJsonAsync<ChatCompletionResponse>(JsonOptions, cancellationToken);
         var translated = payload?.Choices?.FirstOrDefault()?.Message?.Content;
-        translated = TextFormattingHelper.RestoreBlankLines(translated ?? "");
+        translated = TextFormattingHelper.RestoreFromTranslation(translated ?? "", protection);
 
         if (string.IsNullOrWhiteSpace(translated))
             throw new TranslationApiException(0, TranslationProviders.GetEmptyResponseMessage(provider));
@@ -115,7 +116,7 @@ public sealed class TranslationClient : IDisposable
             throw new TranslationApiException(0, TranslationProviders.GetApiKeyMissingMessage(provider));
 
         var model = NormalizeGeminiModel(settings.GetEffectiveModel());
-        var protectedText = TextFormattingHelper.ProtectBlankLines(text);
+        var protection = TextFormattingHelper.ProtectForTranslation(text, settings.PreserveFormatAndCode);
         var systemPrompt = BuildSystemPrompt(settings);
 
         var requestBody = new GeminiGenerateContentRequest
@@ -129,7 +130,7 @@ public sealed class TranslationClient : IDisposable
                 new GeminiContent
                 {
                     Role = "user",
-                    Parts = [new GeminiPart { Text = protectedText }]
+                    Parts = [new GeminiPart { Text = protection.Text }]
                 }
             ]
         };
@@ -151,7 +152,7 @@ public sealed class TranslationClient : IDisposable
             .FirstOrDefault()?
             .Text;
 
-        translated = TextFormattingHelper.RestoreBlankLines(translated ?? "");
+        translated = TextFormattingHelper.RestoreFromTranslation(translated ?? "", protection);
 
         if (string.IsNullOrWhiteSpace(translated))
             throw new TranslationApiException(0, TranslationProviders.GetEmptyResponseMessage(provider));
@@ -175,7 +176,8 @@ public sealed class TranslationClient : IDisposable
         // MyMemory has no LLM-style instruction, so translate line by line to preserve the
         // original layout (and keep blank lines untouched) and chunk long lines to fit the
         // free endpoint's per-query length limit.
-        var lines = text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
+        var protection = TextFormattingHelper.ProtectForTranslation(text, settings.PreserveFormatAndCode);
+        var lines = protection.Text.Replace("\r\n", "\n").Replace('\r', '\n').Split('\n');
         var translatedLines = new string[lines.Length];
 
         for (var i = 0; i < lines.Length; i++)
@@ -190,14 +192,18 @@ public sealed class TranslationClient : IDisposable
             var builder = new StringBuilder();
             foreach (var segment in SplitForMyMemory(line, MyMemoryMaxSegmentLength))
             {
-                builder.Append(await TranslateMyMemorySegmentAsync(segment, source, target, cancellationToken)
+                builder.Append(await TranslateMyMemorySegmentAsync(
+                        segment,
+                        source,
+                        target,
+                        cancellationToken)
                     .ConfigureAwait(false));
             }
 
             translatedLines[i] = builder.ToString();
         }
 
-        var translated = string.Join("\n", translatedLines);
+        var translated = TextFormattingHelper.RestoreFromTranslation(string.Join("\n", translatedLines), protection);
 
         if (string.IsNullOrWhiteSpace(translated))
             throw new TranslationApiException(0, TranslationProviders.GetEmptyResponseMessage(provider));
@@ -206,6 +212,44 @@ public sealed class TranslationClient : IDisposable
     }
 
     private async Task<string> TranslateMyMemorySegmentAsync(
+        string segment,
+        string source,
+        string target,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrEmpty(segment))
+            return segment;
+
+        if (TextFormattingHelper.PreservationMarkerRegex.IsMatch(segment)
+            && TextFormattingHelper.PreservationMarkerRegex.Replace(segment, "").Length == 0)
+            return segment;
+
+        var builder = new StringBuilder();
+        var parts = PreservationMarkerSplitRegex.Split(segment);
+
+        foreach (var part in parts)
+        {
+            if (string.IsNullOrEmpty(part))
+                continue;
+
+            if (TextFormattingHelper.PreservationMarkerRegex.IsMatch(part))
+            {
+                builder.Append(part);
+                continue;
+            }
+
+            builder.Append(await TranslateMyMemoryPlainSegmentAsync(part, source, target, cancellationToken)
+                .ConfigureAwait(false));
+        }
+
+        return builder.ToString();
+    }
+
+    private static readonly Regex PreservationMarkerSplitRegex = new(
+        @"(⟦OT:\d+⟧)",
+        RegexOptions.Compiled);
+
+    private async Task<string> TranslateMyMemoryPlainSegmentAsync(
         string segment,
         string source,
         string target,
@@ -310,12 +354,13 @@ public sealed class TranslationClient : IDisposable
         var target = TranslationLanguages.ResolveName(targetCode);
         var blankLineRule =
             $"The marker {TextFormattingHelper.BlankLineMarker} represents a blank line between paragraphs: do not translate it, remove it, or move it.";
+        var preservationRule = TextFormattingHelper.GetPreservationPromptRule(settings.PreserveFormatAndCode);
 
         if (settings.ImprovementMode == TextImprovementMode.ImproveOnly)
         {
             return "Improve the following text without translating it; keep it in its original language. " +
                    "Correct spelling, grammar, and punctuation, and make it read clearly and naturally. " +
-                   $"Return only the improved text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
+                   $"Return only the improved text, with no explanations or quotes. Preserve line breaks. {blankLineRule}{preservationRule}";
         }
 
         var task = settings.AutoDetectLanguage
@@ -326,7 +371,7 @@ public sealed class TranslationClient : IDisposable
 
         var improvement = TextImprovementModes.GetTranslationClause(settings.ImprovementMode);
 
-        return $"{task}{improvement} Return only the translated text, with no explanations or quotes. Preserve line breaks. {blankLineRule}";
+        return $"{task}{improvement} Return only the translated text, with no explanations or quotes. Preserve line breaks. {blankLineRule}{preservationRule}";
     }
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response, TranslationProvider provider)

@@ -92,6 +92,9 @@ public partial class SettingsViewModel : ObservableObject
     private bool _typewriterPaste = true;
 
     [ObservableProperty]
+    private bool _preserveFormatAndCode = true;
+
+    [ObservableProperty]
     private double _tooltipFontSize = AppSettings.DefaultTooltipFontSize;
 
     [ObservableProperty]
@@ -170,6 +173,7 @@ public partial class SettingsViewModel : ObservableObject
         StartWithWindows = settings.StartWithWindows;
         PlaySoundOnTranslationStart = settings.PlaySoundOnTranslationStart;
         TypewriterPaste = settings.TypewriterPaste;
+        PreserveFormatAndCode = settings.PreserveFormatAndCode;
         TooltipFontSize = settings.TooltipFontSize is > 0
             ? settings.TooltipFontSize
             : AppSettings.DefaultTooltipFontSize;
@@ -537,6 +541,7 @@ public partial class SettingsViewModel : ObservableObject
             StartWithWindows = StartWithWindows,
             PlaySoundOnTranslationStart = PlaySoundOnTranslationStart,
             TypewriterPaste = TypewriterPaste,
+            PreserveFormatAndCode = PreserveFormatAndCode,
             TooltipFontSize = TooltipFontSize,
             ActivationShortcut = ActivationShortcut
         };
