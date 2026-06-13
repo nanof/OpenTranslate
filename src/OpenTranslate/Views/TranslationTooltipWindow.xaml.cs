@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using OpenTranslate.Services;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 
@@ -8,6 +9,17 @@ namespace OpenTranslate.Views;
 
 public partial class TranslationTooltipWindow : Window
 {
+    // A Matrix-style spinner: a single glyph that flickers through characters from
+    // Japanese (katakana + hiragana), Greek and Latin scripts.
+    private static readonly string[] SpinnerGlyphs = BuildGlyphs(
+        "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン" +
+        "あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん" +
+        "αβγδεζηθικλμνξοπρστυφχψωΓΔΘΛΞΠΣΦΨΩ" +
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
+
+    private readonly Random _random = new();
+    private DispatcherTimer? _glyphTimer;
+
     private bool _isClosing;
     private bool _closeOnDeactivate = true;
 
@@ -48,11 +60,14 @@ public partial class TranslationTooltipWindow : Window
         PendingText.Visibility = spinnerOnly ? Visibility.Collapsed : Visibility.Visible;
         TranslationText.Visibility = Visibility.Collapsed;
         ActionPanel.Visibility = Visibility.Collapsed;
+
+        StartGlyphSpinner();
     }
 
     public void SetTranslation(string text)
     {
         _closeOnDeactivate = true;
+        StopGlyphSpinner();
         RootBorder.Padding = new Thickness(10);
         RootBorder.CornerRadius = new CornerRadius(8);
         PendingPanel.Visibility = Visibility.Collapsed;
@@ -61,9 +76,46 @@ public partial class TranslationTooltipWindow : Window
         ActionPanel.Visibility = Visibility.Visible;
     }
 
+    private void StartGlyphSpinner()
+    {
+        if (_glyphTimer is not null)
+            return;
+
+        _glyphTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(90) };
+        _glyphTimer.Tick += OnGlyphTick;
+        _glyphTimer.Start();
+        OnGlyphTick(this, EventArgs.Empty);
+    }
+
+    private void StopGlyphSpinner()
+    {
+        if (_glyphTimer is null)
+            return;
+
+        _glyphTimer.Stop();
+        _glyphTimer.Tick -= OnGlyphTick;
+        _glyphTimer = null;
+    }
+
+    private void OnGlyphTick(object? sender, EventArgs e) =>
+        SpinnerGlyph.Text = SpinnerGlyphs[_random.Next(SpinnerGlyphs.Length)];
+
+    private static string[] BuildGlyphs(string source)
+    {
+        var glyphs = new List<string>(source.Length);
+        foreach (var ch in source)
+        {
+            if (!char.IsWhiteSpace(ch))
+                glyphs.Add(ch.ToString());
+        }
+
+        return [.. glyphs];
+    }
+
     protected override void OnClosing(CancelEventArgs e)
     {
         _isClosing = true;
+        StopGlyphSpinner();
         base.OnClosing(e);
     }
 
