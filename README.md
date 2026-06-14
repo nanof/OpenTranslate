@@ -36,6 +36,7 @@ For non-editable targets, OpenTranslate shows a floating tooltip with:
 - **Copy** and **Replace** actions (Replace is hidden when the target cannot be edited)
 - **Modes** panel (AI providers only) to preview variants: fix grammar, natural tone, concise, formal, casual, summarize, explain in source/target language, or improve without translating
 - Resizable window that remembers your last size
+- Draggable with the mouse from any non-interactive area
 - macOS-style entrance animation and a Matrix-style glyph spinner while loading
 
 ## Settings
@@ -73,7 +74,8 @@ The settings window is organized into tabs:
 | Start with Windows | Register the app to run at login |
 | Play sound when translation starts | Audible feedback on each translation |
 | Typewriter paste | Paste the translation character by character |
-| Appearance | Dark, Light, or follow the Windows theme (Behavior tab) |
+| Appearance | Dark, Light, or follow the Windows theme |
+| Tooltip placement | Floating near the cursor, or fixed in the bottom-right corner (like notifications) |
 | Tooltip font size | Font size for the floating tooltip |
 | Keyboard shortcut | Customizable activation shortcut (default: double **Ctrl+C**) |
 
@@ -86,6 +88,15 @@ Local usage tracking with daily and monthly estimates (characters, approximate t
 ### About
 
 App version, project link, and copyright.
+
+## What's new in 1.3.0
+
+- **Light theme** and **Use Windows setting** to follow the system appearance
+- **Automatic update checks** from GitHub Releases with tray notification and one-click download
+- **Draggable tooltip** — move it by dragging from the background or spinner area
+- **Tooltip placement** — floating near the cursor or pinned to the bottom-right corner
+- **Large text confirmation** — prompts before translating selections over 5000 characters
+- **MyMemory auto-detect** with bidirectional translation between the configured language pair
 
 ## What's new in 1.2.0
 
@@ -109,10 +120,10 @@ dotnet build
 Requires [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) and [Inno Setup 6](https://jrsoftware.org/isinfo.php).
 
 ```powershell
-.\scripts\build-installer.ps1 -Version 1.2.0
+.\scripts\build-installer.ps1 -Version 1.3.0
 ```
 
-The installer will be at `dist/OpenTranslate-Setup-1.2.0.exe`.
+The installer will be at `dist/OpenTranslate-Setup-1.3.0.exe`.
 
 ### Publish only (no installer)
 
@@ -127,8 +138,8 @@ The executable will be at `src/OpenTranslate/bin/Release/net8.0-windows/win-x64/
 Push a version tag to trigger the release workflow:
 
 ```bash
-git tag v1.2.0
-git push origin v1.2.0
+git tag v1.3.0
+git push origin v1.3.0
 ```
 
 This builds the installer and attaches it to a GitHub Release automatically.
