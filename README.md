@@ -73,6 +73,7 @@ The settings window is organized into tabs:
 | Start with Windows | Register the app to run at login |
 | Play sound when translation starts | Audible feedback on each translation |
 | Typewriter paste | Paste the translation character by character |
+| Appearance | Dark, Light, or follow the Windows theme (Behavior tab) |
 | Tooltip font size | Font size for the floating tooltip |
 | Keyboard shortcut | Customizable activation shortcut (default: double **Ctrl+C**) |
 

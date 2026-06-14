@@ -96,6 +96,9 @@ public partial class SettingsViewModel : ObservableObject
     private bool _preserveFormatAndCode = true;
 
     [ObservableProperty]
+    private AppThemeOption _selectedTheme = AppThemeOptions.FromPreference(AppThemePreference.Dark);
+
+    [ObservableProperty]
     private double _tooltipFontSize = AppSettings.DefaultTooltipFontSize;
 
     [ObservableProperty]
@@ -134,6 +137,8 @@ public partial class SettingsViewModel : ObservableObject
     public string ProjectUrl => "https://github.com/nanof/OpenTranslate";
 
     public event EventHandler? SettingsSaved;
+
+    public IReadOnlyList<AppThemeOption> AvailableThemes { get; } = AppThemeOptions.All;
 
     public SettingsViewModel(
         SecureSettingsStore settingsStore,
@@ -185,6 +190,7 @@ public partial class SettingsViewModel : ObservableObject
         PlaySoundOnTranslationStart = settings.PlaySoundOnTranslationStart;
         TypewriterPaste = settings.TypewriterPaste;
         PreserveFormatAndCode = settings.PreserveFormatAndCode;
+        SelectedTheme = AppThemeOptions.FromPreference(settings.ThemePreference);
         TooltipFontSize = settings.TooltipFontSize is > 0
             ? settings.TooltipFontSize
             : AppSettings.DefaultTooltipFontSize;
@@ -273,6 +279,9 @@ public partial class SettingsViewModel : ObservableObject
         ActivationShortcut.DoublePress = value;
         UpdateShortcutDisplay();
     }
+
+    partial void OnSelectedThemeChanged(AppThemeOption value) =>
+        AppThemeService.Instance.Apply(value.Preference);
 
     partial void OnSourceLanguageChanged(string value)
     {
@@ -569,6 +578,7 @@ public partial class SettingsViewModel : ObservableObject
             PlaySoundOnTranslationStart = PlaySoundOnTranslationStart,
             TypewriterPaste = TypewriterPaste,
             PreserveFormatAndCode = PreserveFormatAndCode,
+            ThemePreference = SelectedTheme.Preference,
             TooltipFontSize = TooltipFontSize,
             TooltipWidth = current.TooltipWidth,
             TooltipHeight = current.TooltipHeight,

@@ -24,6 +24,7 @@ public sealed class AppSettings
     public bool PlaySoundOnTranslationStart { get; set; }
     public bool TypewriterPaste { get; set; } = true;
     public bool PreserveFormatAndCode { get; set; } = true;
+    public AppThemePreference ThemePreference { get; set; } = AppThemePreference.Dark;
     public double TooltipFontSize { get; set; } = DefaultTooltipFontSize;
     public double TooltipWidth { get; set; }
     public double TooltipHeight { get; set; }
@@ -57,6 +58,7 @@ public sealed class AppSettings
         PlaySoundOnTranslationStart = PlaySoundOnTranslationStart,
         TypewriterPaste = TypewriterPaste,
         PreserveFormatAndCode = PreserveFormatAndCode,
+        ThemePreference = ThemePreference,
         TooltipFontSize = TooltipFontSize,
         TooltipWidth = TooltipWidth,
         TooltipHeight = TooltipHeight,

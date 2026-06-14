@@ -11,8 +11,6 @@ using Button = System.Windows.Controls.Button;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using SolidColorBrush = System.Windows.Media.SolidColorBrush;
-using Color = System.Windows.Media.Color;
-using ColorConverter = System.Windows.Media.ColorConverter;
 
 namespace OpenTranslate.Views;
 
@@ -39,10 +37,7 @@ public partial class TranslationTooltipWindow : Window
         "αβγδεζηθικλμνξοπρστυφχψωΓΔΘΛΞΠΣΦΨΩ" +
         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
 
-    private static readonly Brush ModeActiveBackground = CreateBrush("#89B4FA");
-    private static readonly Brush ModeActiveForeground = CreateBrush("#1E1E2E");
     private static readonly Brush ModeInactiveBackground = Brushes.Transparent;
-    private static readonly Brush ModeInactiveForeground = CreateBrush("#CDD6F4");
 
     private readonly Random _random = new();
     private readonly Dictionary<TextImprovementMode, Button> _modeButtons = [];
@@ -67,6 +62,8 @@ public partial class TranslationTooltipWindow : Window
     {
         InitializeComponent();
         TranslationText.FontSize = fontSize;
+        ApplyThemeColors();
+        AppThemeService.Instance.ThemeChanged += OnThemeChanged;
 
         if (isPending)
             SetPending(spinnerOnly);
@@ -75,6 +72,20 @@ public partial class TranslationTooltipWindow : Window
 
         Loaded += OnLoaded;
         SizeChanged += OnSizeChanged;
+        Closed += (_, _) => AppThemeService.Instance.ThemeChanged -= OnThemeChanged;
+    }
+
+    private void OnThemeChanged(object? sender, EventArgs e) => ApplyThemeColors();
+
+    private void ApplyThemeColors()
+    {
+        var spinnerBrush = AppThemeService.GetBrush("ThemeSpinner");
+        SpinnerGlyph.Foreground = spinnerBrush;
+        if (SpinnerGlyph.Effect is System.Windows.Media.Effects.DropShadowEffect glow
+            && spinnerBrush is SolidColorBrush spinnerColor)
+            glow.Color = spinnerColor.Color;
+
+        UpdateModeHighlight(_activeMode);
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -508,11 +519,15 @@ public partial class TranslationTooltipWindow : Window
 
     private void UpdateModeHighlight(TextImprovementMode activeMode)
     {
+        var activeBackground = AppThemeService.GetBrush("ThemeAccent");
+        var activeForeground = AppThemeService.GetBrush("ThemeAccentForeground");
+        var inactiveForeground = AppThemeService.GetBrush("ThemeForeground");
+
         foreach (var (mode, button) in _modeButtons)
         {
             var isActive = mode == activeMode;
-            button.Background = isActive ? ModeActiveBackground : ModeInactiveBackground;
-            button.Foreground = isActive ? ModeActiveForeground : ModeInactiveForeground;
+            button.Background = isActive ? activeBackground : ModeInactiveBackground;
+            button.Foreground = isActive ? activeForeground : inactiveForeground;
             button.FontWeight = isActive ? FontWeights.SemiBold : FontWeights.Normal;
         }
     }
@@ -576,13 +591,6 @@ public partial class TranslationTooltipWindow : Window
         ModesButton.IsEnabled = enabled;
         foreach (var button in _modeButtons.Values)
             button.IsEnabled = enabled;
-    }
-
-    private static Brush CreateBrush(string hex)
-    {
-        var brush = new SolidColorBrush((Color)ColorConverter.ConvertFromString(hex));
-        brush.Freeze();
-        return brush;
     }
 
     private void OnCopy(object sender, RoutedEventArgs e)

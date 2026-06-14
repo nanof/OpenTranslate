@@ -107,10 +107,17 @@ public sealed class AppBootstrapper : IDisposable
             _usageTracking!);
 
         viewModel.SettingsSaved += (_, _) =>
+        {
             ApplyShortcutFromSettings(_settingsStore!.Load());
+            AppThemeService.Instance.Apply(_settingsStore.Load().ThemePreference);
+        };
 
         _settingsWindow = new SettingsWindow(viewModel);
-        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Closed += (_, _) =>
+        {
+            AppThemeService.Instance.Apply(_settingsStore!.Load().ThemePreference);
+            _settingsWindow = null;
+        };
         _settingsWindow.Show();
     }
 

@@ -23,15 +23,15 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="Thumb">
                         <Border x:Name="ThumbBd"
-                                Background="#585B70"
+                                Background="{DynamicResource ThemeSurfaceMuted}"
                                 CornerRadius="3"
                                 SnapsToDevicePixels="True" />
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ThumbBd" Property="Background" Value="#6C7086" />
+                                <Setter TargetName="ThumbBd" Property="Background" Value="{DynamicResource ThemeSurfaceMuted}" />
                             </Trigger>
                             <Trigger Property="IsDragging" Value="True">
-                                <Setter TargetName="ThumbBd" Property="Background" Value="#89B4FA" />
+                                <Setter TargetName="ThumbBd" Property="Background" Value="{DynamicResource ThemeAccent}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -96,7 +96,7 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsDefault" Value="True">
-                                <Setter TargetName="Bd" Property="BorderBrush" Value="#F5E0DC" />
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource ThemeDefaultButtonRing}" />
                             </Trigger>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="Bd" Property="Opacity" Value="0.88" />
@@ -129,7 +129,7 @@
                                     <Condition Property="IsMouseOver" Value="True" />
                                     <Condition Property="FontWeight" Value="Normal" />
                                 </MultiTrigger.Conditions>
-                                <Setter TargetName="Bd" Property="Background" Value="#45475A" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ThemeSurfaceHover}" />
                             </MultiTrigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.5" />
@@ -141,8 +141,8 @@
         </Style>
     </Window.Resources>
     <Border x:Name="RootBorder"
-            Background="#313244"
-            BorderBrush="#45475A"
+            Background="{DynamicResource ThemeSurface}"
+            BorderBrush="{DynamicResource ThemeBorder}"
             BorderThickness="1"
             CornerRadius="8"
             Padding="10"
@@ -187,12 +187,12 @@
                                FontSize="16"
                                FontFamily="Consolas, Segoe UI"
                                FontWeight="Bold"
-                               Foreground="#00FF41"
+                               Foreground="{DynamicResource ThemeSpinner}"
                                HorizontalAlignment="Center"
                                VerticalAlignment="Center"
                                TextAlignment="Center">
                         <TextBlock.Effect>
-                            <DropShadowEffect Color="#00FF41"
+                            <DropShadowEffect x:Name="SpinnerGlow"
                                               BlurRadius="10"
                                               ShadowDepth="0"
                                               Opacity="0.9" />
@@ -201,7 +201,7 @@
                 </Grid>
                 <TextBlock x:Name="PendingText"
                            Text="Translating…"
-                           Foreground="#CDD6F4"
+                           Foreground="{DynamicResource ThemeForeground}"
                            FontSize="13"
                            VerticalAlignment="Center" />
             </StackPanel>
@@ -211,7 +211,7 @@
                      IsReadOnly="True"
                      TextWrapping="Wrap"
                      Background="Transparent"
-                     Foreground="#CDD6F4"
+                     Foreground="{DynamicResource ThemeForeground}"
                      BorderThickness="0"
                      FontSize="13"
                      VerticalAlignment="Stretch"
@@ -229,8 +229,8 @@
                         Content="Modes ▾"
                         HorizontalAlignment="Left"
                         Padding="8,3"
-                        Background="#45475A"
-                        Foreground="#CDD6F4"
+                        Background="{DynamicResource ThemeSurfaceHover}"
+                        Foreground="{DynamicResource ThemeForeground}"
                         BorderThickness="0"
                         FontSize="11"
                         Cursor="Hand"
@@ -242,8 +242,8 @@
                             Content="Replace"
                             Style="{StaticResource ActionButton}"
                             Padding="8,3"
-                            Background="#89B4FA"
-                            Foreground="#1E1E2E"
+                            Background="{DynamicResource ThemeAccent}"
+                            Foreground="{DynamicResource ThemeAccentForeground}"
                             FontSize="11"
                             FontWeight="SemiBold"
                             Cursor="Hand"
@@ -253,8 +253,8 @@
                             Style="{StaticResource ActionButton}"
                             Padding="8,3"
                             Margin="6,0,0,0"
-                            Background="#45475A"
-                            Foreground="#CDD6F4"
+                            Background="{DynamicResource ThemeSurfaceHover}"
+                            Foreground="{DynamicResource ThemeForeground}"
                             FontSize="11"
                             Cursor="Hand"
                             Click="OnCopy" />
@@ -264,8 +264,8 @@
             <Border x:Name="ModesPanelBorder"
                     Grid.Row="3"
                     Margin="0,8,0,0"
-                    Background="#272736"
-                    BorderBrush="#45475A"
+                    Background="{DynamicResource ThemeModesPanel}"
+                    BorderBrush="{DynamicResource ThemeBorder}"
                     BorderThickness="1"
                     CornerRadius="6"
                     Padding="4"
@@ -280,7 +280,7 @@
                        HorizontalAlignment="Right"
                        VerticalAlignment="Bottom"
                        Margin="0,0,0,2"
-                       Foreground="#585B70"
+                       Foreground="{DynamicResource ThemeSurfaceMuted}"
                        FontSize="11"
                        Opacity="0.65"
                        IsHitTestVisible="False"

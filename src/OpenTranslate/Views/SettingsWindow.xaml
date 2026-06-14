@@ -7,7 +7,7 @@
         Height="600"
         WindowStartupLocation="CenterScreen"
         ResizeMode="NoResize"
-        Background="#1E1E2E"
+        Background="{DynamicResource ThemeWindowBg}"
         FontSize="15">
     <Window.Resources>
         <converters:InverseBooleanConverter x:Key="InverseBool" />
@@ -15,9 +15,9 @@
 
         <Style x:Key="DarkComboBox" TargetType="ComboBox">
             <Setter Property="FontSize" Value="15" />
-            <Setter Property="Foreground" Value="#CDD6F4" />
-            <Setter Property="Background" Value="#313244" />
-            <Setter Property="BorderBrush" Value="#45475A" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}" />
+            <Setter Property="Background" Value="{DynamicResource ThemeSurface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeSurfaceHover}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="6,4" />
             <Setter Property="MaxDropDownHeight" Value="220" />
@@ -51,7 +51,7 @@
                                                            Text="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
                                                 <Path Grid.Column="1"
                                                       Data="M 0 0 L 4 4 L 8 0 Z"
-                                                      Fill="#CDD6F4"
+                                                      Fill="{DynamicResource ThemeForeground}"
                                                       HorizontalAlignment="Center"
                                                       VerticalAlignment="Center" />
                                             </Grid>
@@ -65,8 +65,8 @@
                                    AllowsTransparency="True"
                                    Focusable="False"
                                    PopupAnimation="Slide">
-                                <Border Background="#313244"
-                                        BorderBrush="#45475A"
+                                <Border Background="{DynamicResource ThemeSurface}"
+                                        BorderBrush="{DynamicResource ThemeBorder}"
                                         BorderThickness="1"
                                         MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
                                     <ScrollViewer SnapsToDevicePixels="True">
@@ -81,8 +81,8 @@
             <Setter Property="ItemContainerStyle">
                 <Setter.Value>
                     <Style TargetType="ComboBoxItem">
-                        <Setter Property="Background" Value="#313244" />
-                        <Setter Property="Foreground" Value="#CDD6F4" />
+                        <Setter Property="Background" Value="{DynamicResource ThemeSurface}" />
+                        <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}" />
                         <Setter Property="Padding" Value="6,4" />
                         <Setter Property="HorizontalContentAlignment" Value="Left" />
                         <Setter Property="Template">
@@ -95,10 +95,10 @@
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsHighlighted" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#45475A" />
+                                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource ThemeSurfaceHover}" />
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#45475A" />
+                                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource ThemeSurfaceHover}" />
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
@@ -111,9 +111,9 @@
 
         <Style x:Key="DarkEditableComboBox" TargetType="ComboBox">
             <Setter Property="FontSize" Value="15" />
-            <Setter Property="Foreground" Value="#CDD6F4" />
-            <Setter Property="Background" Value="#313244" />
-            <Setter Property="BorderBrush" Value="#45475A" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}" />
+            <Setter Property="Background" Value="{DynamicResource ThemeSurface}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ThemeSurfaceHover}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Padding" Value="6,4" />
             <Setter Property="MaxDropDownHeight" Value="240" />
@@ -161,7 +161,7 @@
                                               BorderThickness="0"
                                               IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
                                     <Path Data="M 0 0 L 4 4 L 8 0 Z"
-                                          Fill="#CDD6F4"
+                                          Fill="{DynamicResource ThemeForeground}"
                                           HorizontalAlignment="Center"
                                           VerticalAlignment="Center" />
                                 </ToggleButton>
@@ -172,8 +172,8 @@
                                    AllowsTransparency="True"
                                    Focusable="False"
                                    PopupAnimation="Slide">
-                                <Border Background="#313244"
-                                        BorderBrush="#45475A"
+                                <Border Background="{DynamicResource ThemeSurface}"
+                                        BorderBrush="{DynamicResource ThemeBorder}"
                                         BorderThickness="1"
                                         MinWidth="{Binding ActualWidth, RelativeSource={RelativeSource TemplatedParent}}">
                                     <ScrollViewer SnapsToDevicePixels="True">
@@ -194,8 +194,8 @@
             <Setter Property="ItemContainerStyle">
                 <Setter.Value>
                     <Style TargetType="ComboBoxItem">
-                        <Setter Property="Background" Value="#313244" />
-                        <Setter Property="Foreground" Value="#CDD6F4" />
+                        <Setter Property="Background" Value="{DynamicResource ThemeSurface}" />
+                        <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}" />
                         <Setter Property="Padding" Value="6,4" />
                         <Setter Property="HorizontalContentAlignment" Value="Left" />
                         <Setter Property="Template">
@@ -208,10 +208,10 @@
                                     </Border>
                                     <ControlTemplate.Triggers>
                                         <Trigger Property="IsHighlighted" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#45475A" />
+                                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource ThemeSurfaceHover}" />
                                         </Trigger>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="Border" Property="Background" Value="#45475A" />
+                                            <Setter TargetName="Border" Property="Background" Value="{DynamicResource ThemeSurfaceHover}" />
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
@@ -224,8 +224,8 @@
 
         <Style x:Key="SettingsSecondaryButton" TargetType="Button">
             <Setter Property="FontSize" Value="15" />
-            <Setter Property="Foreground" Value="#CDD6F4" />
-            <Setter Property="Background" Value="#45475A" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}" />
+            <Setter Property="Background" Value="{DynamicResource ThemeSurfaceHover}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="Cursor" Value="Hand" />
             <Setter Property="Template">
@@ -242,10 +242,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#585B70" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ThemeSurfaceMuted}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#6C7086" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ThemeSurfaceMuted}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.5" />
@@ -258,8 +258,8 @@
 
         <Style x:Key="SettingsPrimaryButton" TargetType="Button">
             <Setter Property="FontSize" Value="15" />
-            <Setter Property="Foreground" Value="#1E1E2E" />
-            <Setter Property="Background" Value="#89B4FA" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeAccentForeground}" />
+            <Setter Property="Background" Value="{DynamicResource ThemeAccent}" />
             <Setter Property="BorderThickness" Value="0" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="Cursor" Value="Hand" />
@@ -277,10 +277,10 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#B4BEFE" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ThemeAccentHoverAlt}" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#74C7EC" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ThemeAccentPressedAlt}" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.5" />
@@ -292,7 +292,7 @@
         </Style>
 
         <Style x:Key="DarkTabItem" TargetType="TabItem">
-            <Setter Property="Foreground" Value="#A6ADC8" />
+            <Setter Property="Foreground" Value="{DynamicResource ThemeForegroundMuted}" />
             <Setter Property="FontSize" Value="14" />
             <Setter Property="Template">
                 <Setter.Value>
@@ -310,11 +310,11 @@
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#313244" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ThemeSurface}" />
                             </Trigger>
                             <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#45475A" />
-                                <Setter Property="Foreground" Value="#CDD6F4" />
+                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ThemeSurfaceHover}" />
+                                <Setter Property="Foreground" Value="{DynamicResource ThemeForeground}" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -335,7 +335,7 @@
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
                             <Border Grid.Row="0"
-                                    BorderBrush="#313244"
+                                    BorderBrush="{DynamicResource ThemeSurface}"
                                     BorderThickness="0,0,0,1"
                                     Margin="0,0,0,12">
                                 <TabPanel IsItemsHost="True" Margin="0,0,0,6" />
@@ -361,7 +361,7 @@
                               Padding="0,0,8,0">
                     <StackPanel>
                         <TextBlock Text="Provider"
-                                   Foreground="#A6ADC8"
+                                   Foreground="{DynamicResource ThemeForegroundMuted}"
                                    Margin="0,0,0,4"
                                    FontSize="15" />
                         <ComboBox Style="{StaticResource DarkComboBox}"
@@ -376,32 +376,32 @@
                         </ComboBox>
 
                         <TextBlock Text="{Binding ApiKeyLabel}"
-                                   Foreground="#A6ADC8"
+                                   Foreground="{DynamicResource ThemeForegroundMuted}"
                                    Margin="0,0,0,4"
                                    FontSize="15"
                                    Visibility="{Binding RequiresApiKey, Converter={StaticResource BoolToVis}}" />
                         <TextBox Text="{Binding ApiKey, UpdateSourceTrigger=PropertyChanged}"
                                  Margin="0,0,0,10"
                                  Padding="6,4"
-                                 Background="#313244"
-                                 Foreground="#CDD6F4"
-                                 BorderBrush="#45475A"
+                                 Background="{DynamicResource ThemeSurface}"
+                                 Foreground="{DynamicResource ThemeForeground}"
+                                 BorderBrush="{DynamicResource ThemeBorder}"
                                  Visibility="{Binding RequiresApiKey, Converter={StaticResource BoolToVis}}" />
 
                         <StackPanel Visibility="{Binding SupportsModelSelection, Converter={StaticResource BoolToVis}}">
                             <TextBlock Text="Model"
-                                       Foreground="#A6ADC8"
+                                       Foreground="{DynamicResource ThemeForegroundMuted}"
                                        Margin="0,0,0,4"
                                        FontSize="15" />
                             <Grid Margin="0,0,0,6">
                                 <TextBox Text="{Binding ModelFilter, UpdateSourceTrigger=PropertyChanged}"
                                          Padding="6,4"
-                                         Background="#313244"
-                                         Foreground="#CDD6F4"
-                                         BorderBrush="#45475A"
+                                         Background="{DynamicResource ThemeSurface}"
+                                         Foreground="{DynamicResource ThemeForeground}"
+                                         BorderBrush="{DynamicResource ThemeBorder}"
                                          FontSize="15" />
                                 <TextBlock Text="Filter models…"
-                                           Foreground="#6C7086"
+                                           Foreground="{DynamicResource ThemeForegroundDim}"
                                            FontSize="15"
                                            Margin="10,5,0,0"
                                            IsHitTestVisible="False">
@@ -425,10 +425,10 @@
                                     <DataTemplate>
                                         <StackPanel>
                                             <TextBlock Text="{Binding Id}"
-                                                       Foreground="#CDD6F4"
+                                                       Foreground="{DynamicResource ThemeForeground}"
                                                        FontSize="15" />
                                             <TextBlock Text="{Binding Description}"
-                                                       Foreground="#A6ADC8"
+                                                       Foreground="{DynamicResource ThemeForegroundMuted}"
                                                        FontSize="13"
                                                        Margin="0,1,0,0">
                                                 <TextBlock.Style>
@@ -455,21 +455,21 @@
                                        Margin="2,5,0,0">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
-                                        <Setter Property="Foreground" Value="#A6E3A1" />
+                                        <Setter Property="Foreground" Value="{DynamicResource ThemeSuccess}" />
                                         <Setter Property="Visibility" Value="Visible" />
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding ModelPerformanceHint}" Value="">
                                                 <Setter Property="Visibility" Value="Collapsed" />
                                             </DataTrigger>
                                             <DataTrigger Binding="{Binding ModelPerformanceIsWarning}" Value="True">
-                                                <Setter Property="Foreground" Value="#F38BA8" />
+                                                <Setter Property="Foreground" Value="{DynamicResource ThemeError}" />
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </TextBlock.Style>
                             </TextBlock>
                             <TextBlock Text="Improve text (AI)"
-                                       Foreground="#A6ADC8"
+                                       Foreground="{DynamicResource ThemeForegroundMuted}"
                                        Margin="0,12,0,4"
                                        FontSize="15" />
                             <ComboBox Style="{StaticResource DarkComboBox}"
@@ -499,7 +499,7 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0">
                                 <TextBlock Text="Source language"
-                                           Foreground="#A6ADC8"
+                                           Foreground="{DynamicResource ThemeForegroundMuted}"
                                            Margin="0,0,0,4"
                                            FontSize="15" />
                                 <ComboBox Style="{StaticResource DarkComboBox}"
@@ -510,7 +510,7 @@
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="Target language"
-                                           Foreground="#A6ADC8"
+                                           Foreground="{DynamicResource ThemeForegroundMuted}"
                                            Margin="0,0,0,4"
                                            FontSize="15" />
                                 <ComboBox Style="{StaticResource DarkComboBox}"
@@ -524,13 +524,13 @@
                         <CheckBox Content="{Binding AutoDetectLanguageLabel}"
                                   IsChecked="{Binding AutoDetectLanguage}"
                                   IsEnabled="{Binding SupportsAutoDetect}"
-                                  Foreground="#CDD6F4"
+                                  Foreground="{DynamicResource ThemeForeground}"
                                   FontSize="15"
                                   Margin="0,0,0,10" />
 
                         <CheckBox Content="Preserve code, URLs, paths, and mentions"
                                   IsChecked="{Binding PreserveFormatAndCode}"
-                                  Foreground="#CDD6F4"
+                                  Foreground="{DynamicResource ThemeForeground}"
                                   FontSize="15"
                                   Margin="0,0,0,10" />
                     </StackPanel>
@@ -542,37 +542,47 @@
                               HorizontalScrollBarVisibility="Disabled"
                               Padding="0,0,8,0">
                     <StackPanel>
+                        <TextBlock Text="Appearance"
+                                   Foreground="{DynamicResource ThemeForegroundMuted}"
+                                   Margin="0,0,0,4"
+                                   FontSize="15" />
+                        <ComboBox Style="{StaticResource DarkComboBox}"
+                                  ItemsSource="{Binding AvailableThemes}"
+                                  SelectedItem="{Binding SelectedTheme, UpdateSourceTrigger=PropertyChanged}"
+                                  DisplayMemberPath="DisplayName"
+                                  Margin="0,0,0,10" />
+
                         <CheckBox Content="Start with Windows"
                                   IsChecked="{Binding StartWithWindows}"
-                                  Foreground="#CDD6F4"
+                                  Foreground="{DynamicResource ThemeForeground}"
                                   FontSize="15"
                                   Margin="0,0,0,10" />
 
                         <CheckBox Content="Play sound when translation starts"
                                   IsChecked="{Binding PlaySoundOnTranslationStart}"
-                                  Foreground="#CDD6F4"
+                                  Foreground="{DynamicResource ThemeForeground}"
                                   FontSize="15"
                                   Margin="0,0,0,10" />
 
                         <CheckBox Content="Type the translation character by character (typewriter)"
                                   IsChecked="{Binding TypewriterPaste}"
-                                  Foreground="#CDD6F4"
+                                  Foreground="{DynamicResource ThemeForeground}"
                                   FontSize="15"
                                   Margin="0,0,0,10" />
 
                         <TextBlock Text="Tooltip font size"
-                                   Foreground="#A6ADC8"
+                                   Foreground="{DynamicResource ThemeForegroundMuted}"
                                    Margin="0,0,0,4"
                                    FontSize="15" />
                         <TextBox Text="{Binding TooltipFontSize, UpdateSourceTrigger=PropertyChanged}"
                                  Margin="0,0,0,10"
                                  Padding="6,4"
-                                 Background="#313244"
-                                 Foreground="#CDD6F4"
-                                 BorderBrush="#45475A" />
+                                 Background="{DynamicResource ThemeSurface}"
+                                 Foreground="{DynamicResource ThemeForeground}"
+                                 BorderBrush="{DynamicResource ThemeBorder}" />
 
                         <TextBlock Text="Keyboard shortcut"
-                                   Foreground="#A6ADC8"
+                                   Foreground="{DynamicResource ThemeForegroundMuted}"
                                    Margin="0,0,0,4"
                                    FontSize="15" />
                         <Grid Margin="0,0,0,6">
@@ -583,9 +593,9 @@
                             <TextBox Text="{Binding ShortcutDisplay, Mode=OneWay}"
                                      IsReadOnly="True"
                                      Padding="6,4"
-                                     Background="#313244"
-                                     Foreground="#CDD6F4"
-                                     BorderBrush="#45475A" />
+                                     Background="{DynamicResource ThemeSurface}"
+                                     Foreground="{DynamicResource ThemeForeground}"
+                                     BorderBrush="{DynamicResource ThemeBorder}" />
                             <Button Grid.Column="1"
                                     Content="Change…"
                                     Click="OnChangeShortcut"
@@ -596,7 +606,7 @@
 
                         <CheckBox Content="Press twice in a row"
                                   IsChecked="{Binding ShortcutDoublePress}"
-                                  Foreground="#CDD6F4"
+                                  Foreground="{DynamicResource ThemeForeground}"
                                   FontSize="15"
                                   Margin="0,0,0,10" />
                     </StackPanel>
@@ -609,16 +619,16 @@
                               Padding="0,0,8,0">
                     <StackPanel>
                         <TextBlock Text="Usage (local estimate)"
-                                   Foreground="#A6ADC8"
+                                   Foreground="{DynamicResource ThemeForegroundMuted}"
                                    Margin="0,4,0,4"
                                    FontSize="15" />
                         <TextBlock Text="{Binding UsageSummary}"
-                                   Foreground="#BAC2DE"
+                                   Foreground="{DynamicResource ThemeForegroundSubtle}"
                                    FontSize="14"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,4" />
                         <TextBlock Text="Tokens are approximated (chars ÷ 4). Stored only on this device."
-                                   Foreground="#6C7086"
+                                   Foreground="{DynamicResource ThemeForegroundDim}"
                                    FontSize="13"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,6" />
@@ -638,28 +648,28 @@
                               Padding="0,0,8,0">
                     <StackPanel>
                         <TextBlock Text="OpenTranslate"
-                                   Foreground="#CDD6F4"
+                                   Foreground="{DynamicResource ThemeForeground}"
                                    FontSize="22"
                                    FontWeight="SemiBold"
                                    Margin="0,4,0,2" />
                         <TextBlock Text="{Binding AppVersion}"
-                                   Foreground="#A6ADC8"
+                                   Foreground="{DynamicResource ThemeForegroundMuted}"
                                    FontSize="14"
                                    Margin="0,0,0,12" />
                         <TextBlock Text="Windows clipboard translator powered by AI models via OpenRouter, OpenAI, or Gemini."
-                                   Foreground="#BAC2DE"
+                                   Foreground="{DynamicResource ThemeForegroundSubtle}"
                                    FontSize="14"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,12" />
                         <TextBlock Margin="0,0,0,6">
                             <Hyperlink NavigateUri="{Binding ProjectUrl}"
                                        RequestNavigate="OnOpenLink"
-                                       Foreground="#89B4FA">
+                                       Foreground="{DynamicResource ThemeAccent}">
                                 <Run Text="{Binding ProjectUrl, Mode=OneWay}" />
                             </Hyperlink>
                         </TextBlock>
                         <TextBlock Text="Copyright © Ignacio Martínez"
-                                   Foreground="#6C7086"
+                                   Foreground="{DynamicResource ThemeForegroundDim}"
                                    FontSize="13"
                                    TextWrapping="Wrap"
                                    Margin="0,8,0,0" />
@@ -670,7 +680,7 @@
 
         <TextBlock Grid.Row="1"
                    Text="{Binding StatusMessage}"
-                   Foreground="#89B4FA"
+                   Foreground="{DynamicResource ThemeAccent}"
                    FontSize="15"
                    TextWrapping="Wrap"
                    Margin="0,10,0,10"

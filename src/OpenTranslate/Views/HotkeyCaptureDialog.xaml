@@ -7,7 +7,7 @@
         WindowStartupLocation="CenterOwner"
         ResizeMode="NoResize"
         ShowInTaskbar="False"
-        Background="#1E1E2E"
+        Background="{DynamicResource ThemeWindowBg}"
         PreviewKeyDown="OnPreviewKeyDown">
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -18,20 +18,20 @@
 
         <TextBlock Grid.Row="0"
                    Text="Press the key combination you want to use."
-                   Foreground="#CDD6F4"
+                   Foreground="{DynamicResource ThemeForeground}"
                    FontSize="12"
                    TextWrapping="Wrap"
                    Margin="0,0,0,12" />
 
         <Border Grid.Row="1"
                 Padding="10,8"
-                Background="#313244"
-                BorderBrush="#45475A"
+                Background="{DynamicResource ThemeSurface}"
+                BorderBrush="{DynamicResource ThemeBorder}"
                 BorderThickness="1"
                 Margin="0,0,0,12">
             <TextBlock x:Name="PreviewText"
                        Text="Waiting…"
-                       Foreground="#89B4FA"
+                       Foreground="{DynamicResource ThemeAccent}"
                        FontSize="14"
                        FontWeight="SemiBold"
                        HorizontalAlignment="Center" />
@@ -41,8 +41,8 @@
                 Content="Cancel"
                 HorizontalAlignment="Right"
                 Padding="12,5"
-                Background="#45475A"
-                Foreground="#CDD6F4"
+                Background="{DynamicResource ThemeSurfaceHover}"
+                Foreground="{DynamicResource ThemeForeground}"
                 BorderThickness="0"
                 FontSize="11"
                 Click="OnCancel" />
