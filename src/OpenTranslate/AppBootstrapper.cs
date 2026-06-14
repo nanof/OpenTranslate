@@ -20,6 +20,7 @@ public sealed class AppBootstrapper : IDisposable
     private readonly TranslationOrchestrator? _translationOrchestrator;
     private readonly WindowsStartupService? _startupService;
     private readonly UsageTrackingService? _usageTracking;
+    private readonly UpdateCheckService? _updateCheckService;
     private readonly TrayIconService? _trayService;
     private SettingsWindow? _settingsWindow;
 
@@ -45,6 +46,9 @@ public sealed class AppBootstrapper : IDisposable
         _keyboardHookService = new KeyboardHookService();
         _startupService = new WindowsStartupService();
         _usageTracking = new UsageTrackingService(new UsageStatsStore());
+        _updateCheckService = new UpdateCheckService(new UpdateCheckStore());
+        _updateCheckService.UpdateAvailable += OnUpdateAvailable;
+        _updateCheckService.PendingUpdateChanged += OnPendingUpdateChanged;
         TranslationTooltipService.SetUsageTracking(_usageTracking);
         TranslationTooltipService.SetSettingsStore(_settingsStore);
         _translationOrchestrator = new TranslationOrchestrator(
@@ -72,7 +76,20 @@ public sealed class AppBootstrapper : IDisposable
         {
             System.Windows.Application.Current.Dispatcher.BeginInvoke(OpenSettings);
         }
+
+        _ = _updateCheckService!.CheckSilentlyOnStartupAsync();
     }
+
+    private void OnUpdateAvailable(object? sender, UpdateInfo update) =>
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            _trayService!.ShowBalloon(
+                "Update available",
+                $"OpenTranslate {update.Version} is ready to download.",
+                BalloonIcon.Info));
+
+    private void OnPendingUpdateChanged(object? sender, UpdateInfo? update) =>
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            _trayService!.SetUpdateAvailable(update));
 
     private void OnShortcutActivated(object? sender, ShortcutActivatedEventArgs e)
     {
@@ -104,7 +121,8 @@ public sealed class AppBootstrapper : IDisposable
             _translationClient!,
             _modelCatalog!,
             _startupService!,
-            _usageTracking!);
+            _usageTracking!,
+            _updateCheckService!);
 
         viewModel.SettingsSaved += (_, _) =>
         {
@@ -115,6 +133,7 @@ public sealed class AppBootstrapper : IDisposable
         _settingsWindow = new SettingsWindow(viewModel);
         _settingsWindow.Closed += (_, _) =>
         {
+            viewModel.Detach();
             AppThemeService.Instance.Apply(_settingsStore!.Load().ThemePreference);
             _settingsWindow = null;
         };
@@ -137,11 +156,14 @@ public sealed class AppBootstrapper : IDisposable
         _keyboardHookService!.ShortcutActivated -= OnShortcutActivated;
         _translationOrchestrator!.StatusChanged -= OnStatusChanged;
         _translationOrchestrator.TranslationFailed -= OnTranslationFailed;
+        _updateCheckService!.UpdateAvailable -= OnUpdateAvailable;
+        _updateCheckService.PendingUpdateChanged -= OnPendingUpdateChanged;
 
         _keyboardHookService.Dispose();
         _trayService!.Dispose();
         _translationClient!.Dispose();
         _modelCatalog!.Dispose();
+        _updateCheckService.Dispose();
         _mutex?.ReleaseMutex();
         _mutex?.Dispose();
     }

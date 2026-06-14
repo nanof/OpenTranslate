@@ -16,6 +16,7 @@ public partial class SettingsViewModel : ObservableObject
     private readonly ModelCatalogService _modelCatalog;
     private readonly WindowsStartupService _startupService;
     private readonly UsageTrackingService _usageTracking;
+    private readonly UpdateCheckService _updateCheckService;
     private TranslationProvider _previousProvider = TranslationProvider.OpenRouter;
     private bool _isSyncingProvider;
     private bool _isSyncingModel;
@@ -122,6 +123,15 @@ public partial class SettingsViewModel : ObservableObject
     [ObservableProperty]
     private bool _isModelsLoading;
 
+    [ObservableProperty]
+    private string _updateStatus = "";
+
+    [ObservableProperty]
+    private bool _isUpdateAvailable;
+
+    [ObservableProperty]
+    private bool _isCheckingForUpdates;
+
     public ObservableCollection<ModelOption> AllModels { get; } = [];
 
     public ICollectionView FilteredModels => _filteredModelsView
@@ -131,8 +141,7 @@ public partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<TextImprovementOption> AvailableImprovements => TextImprovementModes.SettingsOptions;
 
-    public string AppVersion =>
-        $"Version {typeof(SettingsViewModel).Assembly.GetName().Version?.ToString(3) ?? "1.0.0"}";
+    public string AppVersion => $"Version {AppVersionHelper.CurrentDisplay}";
 
     public string ProjectUrl => "https://github.com/nanof/OpenTranslate";
 
@@ -145,19 +154,27 @@ public partial class SettingsViewModel : ObservableObject
         TranslationClient translationClient,
         ModelCatalogService modelCatalog,
         WindowsStartupService startupService,
-        UsageTrackingService usageTracking)
+        UsageTrackingService usageTracking,
+        UpdateCheckService updateCheckService)
     {
         _settingsStore = settingsStore;
         _translationClient = translationClient;
         _modelCatalog = modelCatalog;
         _startupService = startupService;
         _usageTracking = usageTracking;
+        _updateCheckService = updateCheckService;
+        _updateCheckService.PendingUpdateChanged += OnPendingUpdateChanged;
 
         _filteredModelsView = CollectionViewSource.GetDefaultView(AllModels);
         _filteredModelsView.Filter = FilterModel;
 
         LoadFromStore();
+        ApplyUpdateCheckResult(new UpdateCheckResult { AvailableUpdate = _updateCheckService.PendingUpdate });
     }
+
+    private void OnPendingUpdateChanged(object? sender, UpdateInfo? update) =>
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+            ApplyUpdateCheckResult(new UpdateCheckResult { AvailableUpdate = update }));
 
     public void LoadFromStore()
     {
@@ -214,6 +231,67 @@ public partial class SettingsViewModel : ObservableObject
         RefreshUsageSummary();
         StatusMessage = "Usage statistics reset.";
     }
+
+    [RelayCommand(CanExecute = nameof(CanDownloadUpdate))]
+    private void DownloadUpdate()
+    {
+        var url = _updateCheckService.PendingUpdate?.DownloadUrl;
+        if (string.IsNullOrWhiteSpace(url))
+            return;
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = url,
+            UseShellExecute = true
+        });
+    }
+
+    private bool CanDownloadUpdate() => IsUpdateAvailable;
+
+    [RelayCommand]
+    private async Task CheckForUpdatesAsync()
+    {
+        IsCheckingForUpdates = true;
+        UpdateStatus = "Checking for updates…";
+
+        try
+        {
+            var result = await _updateCheckService.CheckAsync(force: true);
+            ApplyUpdateCheckResult(result);
+        }
+        catch
+        {
+            UpdateStatus = "Could not check for updates. Try again later.";
+            IsUpdateAvailable = false;
+        }
+        finally
+        {
+            IsCheckingForUpdates = false;
+            DownloadUpdateCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    private void ApplyUpdateCheckResult(UpdateCheckResult result)
+    {
+        if (result.IsUpdateAvailable && result.AvailableUpdate is not null)
+        {
+            UpdateStatus = $"Update {result.AvailableUpdate.Version} is available.";
+            IsUpdateAvailable = true;
+        }
+        else
+        {
+            UpdateStatus = "You're up to date.";
+            IsUpdateAvailable = false;
+        }
+
+        DownloadUpdateCommand.NotifyCanExecuteChanged();
+    }
+
+    public void Detach() =>
+        _updateCheckService.PendingUpdateChanged -= OnPendingUpdateChanged;
+
+    partial void OnIsUpdateAvailableChanged(bool value) =>
+        DownloadUpdateCommand.NotifyCanExecuteChanged();
 
     public async Task LoadModelsAsync()
     {

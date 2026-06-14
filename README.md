@@ -77,6 +77,8 @@ The settings window is organized into tabs:
 | Tooltip font size | Font size for the floating tooltip |
 | Keyboard shortcut | Customizable activation shortcut (default: double **Ctrl+C**) |
 
+The app checks [GitHub Releases](https://github.com/nanof/OpenTranslate/releases) once per day for updates. When a new version is available, a tray notification appears and **Download v…** is added to the tray menu. You can also check manually in **Settings → About**.
+
 ### Usage
 
 Local usage tracking with daily and monthly estimates (characters, approximate tokens, translation count). Data stays on your device only.
@@ -134,6 +136,8 @@ This builds the installer and attaches it to a GitHub Release automatically.
 ## Privacy
 
 Copied text is sent to the configured provider (MyMemory, OpenRouter, OpenAI, or Gemini) for translation. It is not stored locally beyond the clipboard, encrypted settings, and optional local usage statistics (character counts on your device only).
+
+Once per day, the app may contact the GitHub API to check for new releases. No translation data is sent during update checks.
 
 ## License
 

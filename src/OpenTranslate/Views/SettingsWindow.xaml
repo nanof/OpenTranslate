@@ -655,7 +655,24 @@
                         <TextBlock Text="{Binding AppVersion}"
                                    Foreground="{DynamicResource ThemeForegroundMuted}"
                                    FontSize="14"
-                                   Margin="0,0,0,12" />
+                                   Margin="0,0,0,8" />
+                        <TextBlock Text="{Binding UpdateStatus}"
+                                   Foreground="{DynamicResource ThemeForegroundSubtle}"
+                                   FontSize="14"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,8" />
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <Button Content="Check for updates"
+                                    Command="{Binding CheckForUpdatesCommand}"
+                                    IsEnabled="{Binding IsCheckingForUpdates, Converter={StaticResource InverseBool}}"
+                                    Style="{StaticResource SettingsSecondaryButton}"
+                                    Padding="10,4"
+                                    Margin="0,0,6,0" />
+                            <Button Content="Download"
+                                    Command="{Binding DownloadUpdateCommand}"
+                                    Style="{StaticResource SettingsPrimaryButton}"
+                                    Padding="10,4" />
+                        </StackPanel>
                         <TextBlock Text="Windows clipboard translator powered by AI models via OpenRouter, OpenAI, or Gemini."
                                    Foreground="{DynamicResource ThemeForegroundSubtle}"
                                    FontSize="14"
