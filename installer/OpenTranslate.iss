@@ -11,9 +11,11 @@
 #define MyAppExeName "OpenTranslate.exe"
 #define MyAppUrl "https://github.com/nanof/OpenTranslate"
 #define MyAppIcon "..\src\OpenTranslate\Assets\app.ico"
+#define MyAppLicense "..\LICENSE"
 
 [Setup]
 SetupIconFile={#MyAppIcon}
+LicenseFile={#MyAppLicense}
 AppId={{A3F8C2E1-9B4D-4F6A-8C7E-1D2E3F4A5B6C}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
@@ -43,6 +45,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 Source: "{#PublishDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MyAppLicense}"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"

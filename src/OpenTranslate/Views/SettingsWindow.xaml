@@ -698,6 +698,37 @@
                                 <Run Text="{Binding ProjectUrl, Mode=OneWay}" />
                             </Hyperlink>
                         </TextBlock>
+                        <TextBlock Text="Free for noncommercial use under the Polyform Noncommercial License."
+                                   Foreground="{DynamicResource ThemeForegroundSubtle}"
+                                   FontSize="14"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,6" />
+                        <TextBlock Margin="0,0,0,6">
+                            <Hyperlink NavigateUri="{Binding LicenseUrl}"
+                                       RequestNavigate="OnOpenLink"
+                                       Foreground="{DynamicResource ThemeAccent}">
+                                <Run Text="View license" />
+                            </Hyperlink>
+                        </TextBlock>
+                        <TextBlock Text="Commercial use requires a separate license."
+                                   Foreground="{DynamicResource ThemeForegroundSubtle}"
+                                   FontSize="14"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,6" />
+                        <TextBlock Margin="0,0,0,6">
+                            <Hyperlink NavigateUri="{Binding CommercialLicenseUrl}"
+                                       RequestNavigate="OnOpenLink"
+                                       Foreground="{DynamicResource ThemeAccent}">
+                                <Run Text="Request a commercial license" />
+                            </Hyperlink>
+                        </TextBlock>
+                        <TextBlock Margin="0,0,0,12">
+                            <Hyperlink NavigateUri="{Binding BuyMeACoffeeUrl}"
+                                       RequestNavigate="OnOpenLink"
+                                       Foreground="{DynamicResource ThemeAccent}">
+                                <Run Text="Buy Me a Coffee" />
+                            </Hyperlink>
+                        </TextBlock>
                         <TextBlock Text="Copyright © Ignacio Martínez"
                                    Foreground="{DynamicResource ThemeForegroundDim}"
                                    FontSize="13"

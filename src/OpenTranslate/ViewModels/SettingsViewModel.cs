@@ -148,6 +148,12 @@ public partial class SettingsViewModel : ObservableObject
 
     public string ProjectUrl => "https://github.com/nanof/OpenTranslate";
 
+    public string BuyMeACoffeeUrl => "https://buymeacoffee.com/nanof";
+
+    public string LicenseUrl => "https://polyformproject.org/licenses/noncommercial/1.0.0";
+
+    public string CommercialLicenseUrl => "https://github.com/nanof/OpenTranslate/issues";
+
     public event EventHandler? SettingsSaved;
 
     public IReadOnlyList<AppThemeOption> AvailableThemes { get; } = AppThemeOptions.All;

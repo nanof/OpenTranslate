@@ -157,4 +157,8 @@ Once per day, the app may contact the GitHub API to check for new releases. No t
 
 ## License
 
-MIT
+OpenTranslate is free for **noncommercial use** under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+
+- **Personal, educational, and nonprofit use** is allowed.
+- **Commercial use** (business, paid products, internal company tools, etc.) requires a separate license — open an issue on [GitHub](https://github.com/nanof/OpenTranslate/issues) to get in touch.
+- If you find the project useful, you can support development on [Buy Me a Coffee](https://buymeacoffee.com/nanof).
