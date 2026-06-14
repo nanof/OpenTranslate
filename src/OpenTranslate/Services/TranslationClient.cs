@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -169,8 +170,9 @@ public sealed class TranslationClient : IDisposable
 
         var source = NormalizeMyMemoryLanguage(settings.SourceLanguage, "es");
         var target = NormalizeMyMemoryLanguage(settings.TargetLanguage, "en");
+        var autoDetect = settings.AutoDetectLanguage;
 
-        if (string.Equals(source, target, StringComparison.OrdinalIgnoreCase))
+        if (MyMemoryLanguagesMatch(source, target))
             throw new TranslationApiException(0, "Source and target language must be different.");
 
         // MyMemory has no LLM-style instruction, so translate line by line to preserve the
@@ -196,6 +198,7 @@ public sealed class TranslationClient : IDisposable
                         segment,
                         source,
                         target,
+                        autoDetect,
                         cancellationToken)
                     .ConfigureAwait(false));
             }
@@ -215,6 +218,7 @@ public sealed class TranslationClient : IDisposable
         string segment,
         string source,
         string target,
+        bool autoDetect,
         CancellationToken cancellationToken)
     {
         if (string.IsNullOrEmpty(segment))
@@ -238,7 +242,12 @@ public sealed class TranslationClient : IDisposable
                 continue;
             }
 
-            builder.Append(await TranslateMyMemoryPlainSegmentAsync(part, source, target, cancellationToken)
+            builder.Append(await TranslateMyMemoryPlainSegmentAsync(
+                    part,
+                    source,
+                    target,
+                    autoDetect,
+                    cancellationToken)
                 .ConfigureAwait(false));
         }
 
@@ -253,10 +262,35 @@ public sealed class TranslationClient : IDisposable
         string segment,
         string source,
         string target,
+        bool autoDetect,
+        CancellationToken cancellationToken)
+    {
+        if (!autoDetect)
+            return RequireMyMemorySuccess(
+                    await QueryMyMemoryAsync(segment, source, target, cancellationToken).ConfigureAwait(false))
+                .TranslatedText;
+
+        // autodetect|target detects the source language; if it matches target (MyMemory returns
+        // 403), the text is already in the target language — translate back to source instead.
+        var detected = await QueryMyMemoryAsync(segment, "autodetect", target, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (detected.IsSuccess && !MyMemoryLanguagesMatch(detected.DetectedLanguage, target))
+            return detected.TranslatedText;
+
+        return RequireMyMemorySuccess(
+                await QueryMyMemoryAsync(segment, target, source, cancellationToken).ConfigureAwait(false))
+            .TranslatedText;
+    }
+
+    private async Task<MyMemoryQueryResult> QueryMyMemoryAsync(
+        string segment,
+        string sourceLang,
+        string targetLang,
         CancellationToken cancellationToken)
     {
         var query = Uri.EscapeDataString(segment);
-        var langPair = Uri.EscapeDataString($"{source}|{target}");
+        var langPair = Uri.EscapeDataString($"{sourceLang}|{targetLang}");
 
         using var response = await _myMemoryClient
             .GetAsync($"get?q={query}&langpair={langPair}", cancellationToken)
@@ -268,17 +302,67 @@ public sealed class TranslationClient : IDisposable
             .ReadFromJsonAsync<MyMemoryResponse>(JsonOptions, cancellationToken)
             .ConfigureAwait(false);
 
+        if (!IsMyMemorySuccess(payload))
+        {
+            return new MyMemoryQueryResult(
+                "",
+                payload?.ResponseData?.DetectedLanguage,
+                false,
+                payload?.ResponseDetails);
+        }
+
         var translated = payload?.ResponseData?.TranslatedText;
         if (string.IsNullOrWhiteSpace(translated))
         {
-            var details = string.IsNullOrWhiteSpace(payload?.ResponseDetails)
-                ? TranslationProviders.GetEmptyResponseMessage(TranslationProvider.MyMemory)
-                : payload!.ResponseDetails!;
-            throw new TranslationApiException(0, details);
+            return new MyMemoryQueryResult(
+                "",
+                payload?.ResponseData?.DetectedLanguage,
+                false,
+                payload?.ResponseDetails);
         }
 
-        return System.Net.WebUtility.HtmlDecode(translated);
+        return new MyMemoryQueryResult(
+            System.Net.WebUtility.HtmlDecode(translated),
+            payload?.ResponseData?.DetectedLanguage,
+            true,
+            null);
     }
+
+    private static MyMemoryQueryResult RequireMyMemorySuccess(MyMemoryQueryResult result)
+    {
+        if (result.IsSuccess)
+            return result;
+
+        var details = string.IsNullOrWhiteSpace(result.ErrorDetails)
+            ? TranslationProviders.GetEmptyResponseMessage(TranslationProvider.MyMemory)
+            : result.ErrorDetails!;
+        throw new TranslationApiException(0, details);
+    }
+
+    private static bool IsMyMemorySuccess(MyMemoryResponse? payload) =>
+        int.TryParse(payload?.ResponseStatus, out var status) && status == 200;
+
+    private static bool MyMemoryLanguagesMatch(string? a, string? b) =>
+        string.Equals(
+            GetMyMemoryLanguagePrimaryCode(a),
+            GetMyMemoryLanguagePrimaryCode(b),
+            StringComparison.OrdinalIgnoreCase);
+
+    private static string GetMyMemoryLanguagePrimaryCode(string? code)
+    {
+        var normalized = NormalizeMyMemoryLanguage(code, "");
+        if (string.IsNullOrEmpty(normalized))
+            return "";
+
+        var dash = normalized.IndexOf('-');
+        return dash > 0 ? normalized[..dash] : normalized;
+    }
+
+    private sealed record MyMemoryQueryResult(
+        string TranslatedText,
+        string? DetectedLanguage,
+        bool IsSuccess,
+        string? ErrorDetails);
 
     private static IReadOnlyList<string> SplitForMyMemory(string text, int maxLength)
     {
@@ -483,10 +567,30 @@ public sealed class TranslationClient : IDisposable
     {
         public MyMemoryResponseData? ResponseData { get; set; }
         public string? ResponseDetails { get; set; }
+
+        [JsonConverter(typeof(FlexibleStringJsonConverter))]
+        public string? ResponseStatus { get; set; }
     }
 
     private sealed class MyMemoryResponseData
     {
         public string? TranslatedText { get; set; }
+        public string? DetectedLanguage { get; set; }
+    }
+
+    // MyMemory returns responseStatus as a number on success (200) and as a string on errors ("403").
+    private sealed class FlexibleStringJsonConverter : JsonConverter<string?>
+    {
+        public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+            reader.TokenType switch
+            {
+                JsonTokenType.String => reader.GetString(),
+                JsonTokenType.Number => reader.GetInt64().ToString(CultureInfo.InvariantCulture),
+                JsonTokenType.Null => null,
+                _ => throw new JsonException($"Unexpected token {reader.TokenType} when parsing a string.")
+            };
+
+        public override void Write(Utf8JsonWriter writer, string? value, JsonSerializerOptions options) =>
+            writer.WriteStringValue(value);
     }
 }

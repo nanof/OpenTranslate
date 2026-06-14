@@ -63,7 +63,7 @@ The settings window is organized into tabs:
 |-------|-------------|
 | Source language | Language code, e.g. `es` |
 | Target language | Language code, e.g. `en` |
-| Auto-detect source | Detect source language automatically (AI providers only) |
+| Auto-detect source | Detect source language automatically and translate in either direction between the configured pair (works with all providers, including MyMemory) |
 | Preserve code, URLs, paths, and mentions | Keep code blocks, URLs, file paths, `@mentions`, Slack links, and Markdown formatting intact during translation |
 
 ### Behavior

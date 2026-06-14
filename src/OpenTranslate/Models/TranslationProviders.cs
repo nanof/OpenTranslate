@@ -34,8 +34,7 @@ public static class TranslationProviders
     public static bool SupportsModelSelection(TranslationProvider provider) =>
         provider != TranslationProvider.MyMemory;
 
-    public static bool SupportsAutoDetect(TranslationProvider provider) =>
-        provider != TranslationProvider.MyMemory;
+    public static bool SupportsAutoDetect(TranslationProvider provider) => true;
 
     public static bool SupportsImprovement(TranslationProvider provider) =>
         provider != TranslationProvider.MyMemory;
