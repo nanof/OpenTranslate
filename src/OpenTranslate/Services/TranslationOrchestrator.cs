@@ -8,6 +8,7 @@ public sealed class TranslationOrchestrator
     private const int PasteDelayMs = 200;
     private const int OperationTimeoutMs = 20000;
     private const int TypewriterDelayMicroseconds = 1500;
+    private const int LargeTextConfirmationThreshold = 5000;
 
     private readonly SecureSettingsStore _settingsStore;
     private readonly TranslationClient _translationClient;
@@ -104,6 +105,19 @@ public sealed class TranslationOrchestrator
                 return;
             }
 
+            var needsLargeTextConfirmation = source.Text.Length > LargeTextConfirmationThreshold;
+            if (needsLargeTextConfirmation)
+            {
+                if (fromShortcut)
+                    TranslationTooltipService.CloseIfOpen();
+
+                if (!await ConfirmLargeTextAsync(source.Text.Length, source.Window).ConfigureAwait(false))
+                {
+                    SetStatus("Ready");
+                    return;
+                }
+            }
+
             // For shortcut activations the floating spinner was already shown above. For other
             // activations (e.g. tray menu) show the appropriate feedback now.
             if (!fromShortcut)
@@ -112,6 +126,10 @@ public sealed class TranslationOrchestrator
                     await ShowSpinnerOnlyAsync(settings.TooltipFontSize).ConfigureAwait(false);
                 else
                     await ShowTooltipPendingAsync(settings.TooltipFontSize).ConfigureAwait(false);
+            }
+            else if (needsLargeTextConfirmation)
+            {
+                await ShowSpinnerOnlyAsync(settings.TooltipFontSize).ConfigureAwait(false);
             }
 
             var translated = await _translationClient
@@ -501,6 +519,19 @@ public sealed class TranslationOrchestrator
         {
             TranslationTooltipService.ShowPending(tooltipFontSize, spinnerOnly: true);
             return Task.CompletedTask;
+        });
+
+    private static Task<bool> ConfirmLargeTextAsync(int characterCount, nint foregroundWindow) =>
+        RunOnUiThreadAsync(() =>
+        {
+            var confirmed = ForegroundMessageBox.Confirm(
+                $"The selected text is large ({characterCount:N0} characters). " +
+                "Translating it may take longer and use more API quota.\n\n" +
+                "Do you want to continue?",
+                "OpenTranslate",
+                foregroundWindow);
+
+            return Task.FromResult(confirmed);
         });
 
     private void Fail(string message)
