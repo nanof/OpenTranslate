@@ -483,6 +483,9 @@ public partial class TranslationTooltipWindow : Window
         if (e.ChangedButton != MouseButton.Left || e.ButtonState != MouseButtonState.Pressed)
             return;
 
+        if (!TranslationTooltipService.IsFloatingPlacement())
+            return;
+
         if (IsFromInteractiveControl(e.OriginalSource as DependencyObject))
             return;
 
@@ -505,6 +508,9 @@ public partial class TranslationTooltipWindow : Window
         {
             _isDragging = false;
             _closeOnDeactivate = previousCloseOnDeactivate;
+
+            if (TranslationTooltipService.IsFloatingPlacement())
+                TranslationTooltipService.SaveTooltipPosition(Left, Top);
         }
     }
 

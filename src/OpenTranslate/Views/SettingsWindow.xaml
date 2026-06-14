@@ -43,12 +43,15 @@
                                                     <ColumnDefinition Width="*" />
                                                     <ColumnDefinition Width="20" />
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0"
-                                                           Margin="{Binding Padding, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                           HorizontalAlignment="Left"
-                                                           VerticalAlignment="Center"
-                                                           Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}"
-                                                           Text="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
+                                                <ContentPresenter Grid.Column="0"
+                                                                  Margin="{Binding Padding, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  HorizontalAlignment="Left"
+                                                                  VerticalAlignment="Center"
+                                                                  Content="{Binding SelectionBoxItem, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  ContentTemplate="{Binding SelectionBoxItemTemplate, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  ContentTemplateSelector="{Binding ItemTemplateSelector, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  ContentStringFormat="{Binding SelectionBoxItemStringFormat, RelativeSource={RelativeSource AncestorType=ComboBox}}"
+                                                                  TextElement.Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ComboBox}}" />
                                                 <Path Grid.Column="1"
                                                       Data="M 0 0 L 4 4 L 8 0 Z"
                                                       Fill="{DynamicResource ThemeForeground}"
@@ -580,6 +583,16 @@
                                  Background="{DynamicResource ThemeSurface}"
                                  Foreground="{DynamicResource ThemeForeground}"
                                  BorderBrush="{DynamicResource ThemeBorder}" />
+
+                        <TextBlock Text="Tooltip position"
+                                   Foreground="{DynamicResource ThemeForegroundMuted}"
+                                   Margin="0,0,0,4"
+                                   FontSize="15" />
+                        <ComboBox Style="{StaticResource DarkComboBox}"
+                                  ItemsSource="{Binding AvailableTooltipPlacements}"
+                                  SelectedItem="{Binding SelectedTooltipPlacement, UpdateSourceTrigger=PropertyChanged}"
+                                  DisplayMemberPath="DisplayName"
+                                  Margin="0,0,0,10" />
 
                         <TextBlock Text="Keyboard shortcut"
                                    Foreground="{DynamicResource ThemeForegroundMuted}"

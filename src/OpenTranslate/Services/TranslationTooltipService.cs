@@ -60,6 +60,31 @@ public static class TranslationTooltipService
         _settingsStore.Save(settings);
     }
 
+    public static TooltipPlacement GetTooltipPlacement() =>
+        _settingsStore?.Load().TooltipPlacement ?? TooltipPlacement.Floating;
+
+    public static bool IsFloatingPlacement() => GetTooltipPlacement() == TooltipPlacement.Floating;
+
+    public static void SaveTooltipPosition(double left, double top)
+    {
+        if (_settingsStore is null || GetTooltipPlacement() != TooltipPlacement.Floating)
+            return;
+
+        var settings = _settingsStore.Load();
+        settings.TooltipPositionSaved = true;
+        settings.TooltipLeft = left;
+        settings.TooltipTop = top;
+        _settingsStore.Save(settings);
+    }
+
+    public static void ApplyPlacement(WpfWindow window)
+    {
+        if (GetTooltipPlacement() == TooltipPlacement.BottomRight)
+            PositionBottomRight(window);
+        else
+            PositionFloating(window);
+    }
+
     public static bool VariantsAvailable { get; private set; }
 
     public static TextImprovementMode ActiveVariantMode => _activeVariantMode;
@@ -82,12 +107,17 @@ public static class TranslationTooltipService
 
         if (_current is { IsVisible: true })
         {
-            _current.SetPending(spinnerOnly);
+            var effectiveSpinnerOnly = ResolveSpinnerOnly(spinnerOnly);
+            _current.SetPending(effectiveSpinnerOnly);
+            ApplyPlacement(_current);
             return;
         }
 
         OpenPending(fontSize, spinnerOnly);
     }
+
+    private static bool ResolveSpinnerOnly(bool spinnerOnly) =>
+        spinnerOnly || GetTooltipPlacement() == TooltipPlacement.BottomRight;
 
     public static void Update(
         string translation,
@@ -109,6 +139,7 @@ public static class TranslationTooltipService
         if (_current is { IsVisible: true })
         {
             _current.SetTranslation(translation, canReplace, VariantsAvailable, _activeVariantMode);
+            ApplyPlacement(_current);
             // The pending spinner was shown without focus; grab focus now so the user can
             // dismiss the result with ESC.
             _current.FocusForInteraction();
@@ -227,8 +258,12 @@ public static class TranslationTooltipService
 
     private static void OpenPending(double fontSize, bool spinnerOnly) =>
         Open(
-            () => new TranslationTooltipWindow(string.Empty, fontSize, isPending: true, spinnerOnly),
-            activate: !spinnerOnly);
+            () => new TranslationTooltipWindow(
+                string.Empty,
+                fontSize,
+                isPending: true,
+                ResolveSpinnerOnly(spinnerOnly)),
+            activate: !ResolveSpinnerOnly(spinnerOnly));
 
     private static void OpenTranslation(string translation, double fontSize, bool canReplace) =>
         Open(() => new TranslationTooltipWindow(
@@ -251,20 +286,57 @@ public static class TranslationTooltipService
         };
 
         _current = window;
-        PositionNearCursor(window);
         window.ShowActivated = activate;
         window.Show();
+        ApplyPlacement(window);
 
         if (activate)
             window.Activate();
     }
 
-    private static void PositionNearCursor(WpfWindow window)
+    private static void PositionFloating(WpfWindow window)
     {
         const int offset = 14;
+        var settings = _settingsStore?.Load();
+        var (width, height) = MeasureWindow(window);
+
+        if (settings?.TooltipPositionSaved == true
+            && IsPositionVisible(settings.TooltipLeft, settings.TooltipTop, width, height))
+        {
+            window.Left = settings.TooltipLeft;
+            window.Top = settings.TooltipTop;
+            return;
+        }
+
         var cursor = System.Windows.Forms.Cursor.Position;
         var workArea = System.Windows.Forms.Screen.FromPoint(cursor).WorkingArea;
 
+        var left = (double)cursor.X + offset;
+        var top = (double)cursor.Y + offset;
+
+        if (left + width > workArea.Right)
+            left = Math.Max(workArea.Left, cursor.X - width - offset);
+
+        if (top + height > workArea.Bottom)
+            top = Math.Max(workArea.Top, cursor.Y - height - offset);
+
+        window.Left = left;
+        window.Top = top;
+    }
+
+    private static void PositionBottomRight(WpfWindow window)
+    {
+        const int margin = 12;
+        var workArea = System.Windows.Forms.Screen.PrimaryScreen?.WorkingArea
+            ?? System.Windows.Forms.Screen.FromPoint(System.Windows.Forms.Cursor.Position).WorkingArea;
+        var (width, height) = MeasureWindow(window);
+
+        window.Left = workArea.Right - width - margin;
+        window.Top = workArea.Bottom - height - margin;
+    }
+
+    private static (double Width, double Height) MeasureWindow(WpfWindow window)
+    {
         window.UpdateLayout();
 
         var width = window.ActualWidth > 0
@@ -285,16 +357,23 @@ public static class TranslationTooltipService
             height = window.DesiredSize.Height;
         }
 
-        var left = (double)cursor.X + offset;
-        var top = (double)cursor.Y + offset;
+        return (width, height);
+    }
 
-        if (left + width > workArea.Right)
-            left = Math.Max(workArea.Left, cursor.X - width - offset);
+    private static bool IsPositionVisible(double left, double top, double width, double height)
+    {
+        var windowRect = new System.Drawing.Rectangle(
+            (int)Math.Round(left),
+            (int)Math.Round(top),
+            Math.Max(1, (int)Math.Round(width)),
+            Math.Max(1, (int)Math.Round(height)));
 
-        if (top + height > workArea.Bottom)
-            top = Math.Max(workArea.Top, cursor.Y - height - offset);
+        foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+        {
+            if (screen.WorkingArea.IntersectsWith(windowRect))
+                return true;
+        }
 
-        window.Left = left;
-        window.Top = top;
+        return false;
     }
 }

@@ -28,6 +28,10 @@ public sealed class AppSettings
     public double TooltipFontSize { get; set; } = DefaultTooltipFontSize;
     public double TooltipWidth { get; set; }
     public double TooltipHeight { get; set; }
+    public TooltipPlacement TooltipPlacement { get; set; } = TooltipPlacement.Floating;
+    public bool TooltipPositionSaved { get; set; }
+    public double TooltipLeft { get; set; }
+    public double TooltipTop { get; set; }
     public ActivationShortcut ActivationShortcut { get; set; } = ActivationShortcut.Default;
 
     public string GetApiKey(TranslationProvider provider) =>
@@ -62,6 +66,10 @@ public sealed class AppSettings
         TooltipFontSize = TooltipFontSize,
         TooltipWidth = TooltipWidth,
         TooltipHeight = TooltipHeight,
+        TooltipPlacement = TooltipPlacement,
+        TooltipPositionSaved = TooltipPositionSaved,
+        TooltipLeft = TooltipLeft,
+        TooltipTop = TooltipTop,
         ActivationShortcut = ActivationShortcut
     };
 }

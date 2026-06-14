@@ -103,6 +103,9 @@ public partial class SettingsViewModel : ObservableObject
     private double _tooltipFontSize = AppSettings.DefaultTooltipFontSize;
 
     [ObservableProperty]
+    private TooltipPlacementOption _selectedTooltipPlacement = TooltipPlacementOptions.All[0];
+
+    [ObservableProperty]
     private string _shortcutDisplay = ShortcutFormatter.Format(ActivationShortcut.Default);
 
     [ObservableProperty]
@@ -148,6 +151,8 @@ public partial class SettingsViewModel : ObservableObject
     public event EventHandler? SettingsSaved;
 
     public IReadOnlyList<AppThemeOption> AvailableThemes { get; } = AppThemeOptions.All;
+
+    public IReadOnlyList<TooltipPlacementOption> AvailableTooltipPlacements { get; } = TooltipPlacementOptions.All;
 
     public SettingsViewModel(
         SecureSettingsStore settingsStore,
@@ -211,6 +216,7 @@ public partial class SettingsViewModel : ObservableObject
         TooltipFontSize = settings.TooltipFontSize is > 0
             ? settings.TooltipFontSize
             : AppSettings.DefaultTooltipFontSize;
+        SelectedTooltipPlacement = TooltipPlacementOptions.FromPlacement(settings.TooltipPlacement);
         ActivationShortcut = settings.ActivationShortcut ?? ActivationShortcut.Default;
         ShortcutDoublePress = ActivationShortcut.DoublePress;
         UpdateShortcutDisplay();
@@ -660,6 +666,10 @@ public partial class SettingsViewModel : ObservableObject
             TooltipFontSize = TooltipFontSize,
             TooltipWidth = current.TooltipWidth,
             TooltipHeight = current.TooltipHeight,
+            TooltipPlacement = SelectedTooltipPlacement.Placement,
+            TooltipPositionSaved = current.TooltipPositionSaved,
+            TooltipLeft = current.TooltipLeft,
+            TooltipTop = current.TooltipTop,
             ActivationShortcut = ActivationShortcut
         };
 
