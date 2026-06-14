@@ -1,5 +1,6 @@
 using System.Drawing;
-using System.Drawing.Drawing2D;
+using System.IO;
+using System.Reflection;
 
 namespace OpenTranslate.Services;
 
@@ -12,19 +13,32 @@ public static class AppIconHelper
         if (_cachedIcon is not null)
             return _cachedIcon;
 
-        const int size = 32;
-        using var bitmap = new Bitmap(size, size);
-        using var graphics = Graphics.FromImage(bitmap);
-        graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        graphics.Clear(Color.FromArgb(30, 30, 46));
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "app.ico");
+        if (File.Exists(iconPath))
+        {
+            _cachedIcon = new Icon(iconPath);
+            return _cachedIcon;
+        }
 
-        using var fill = new SolidBrush(Color.FromArgb(137, 180, 250));
-        graphics.FillEllipse(fill, 2, 2, size - 4, size - 4);
+        using var stream = Assembly.GetExecutingAssembly()
+            .GetManifestResourceStream("OpenTranslate.Assets.app.ico");
+        if (stream is not null)
+        {
+            _cachedIcon = new Icon(stream);
+            return _cachedIcon;
+        }
 
-        using var font = new Font("Segoe UI", 14, FontStyle.Bold, GraphicsUnit.Pixel);
-        graphics.DrawString("T", font, Brushes.White, 7, 5);
+        var exePath = Environment.ProcessPath;
+        if (!string.IsNullOrEmpty(exePath))
+        {
+            using var extracted = Icon.ExtractAssociatedIcon(exePath);
+            if (extracted is not null)
+            {
+                _cachedIcon = (Icon)extracted.Clone();
+                return _cachedIcon;
+            }
+        }
 
-        _cachedIcon = Icon.FromHandle(bitmap.GetHicon());
-        return _cachedIcon;
+        throw new InvalidOperationException("Application icon not found.");
     }
 }

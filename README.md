@@ -22,7 +22,7 @@ Settings are preserved across upgrades at `%AppData%\OpenTranslate\settings.dat`
 
 ## Usage
 
-1. Run the application. A **T** icon appears in the system tray.
+1. Run the application. A **globe** icon appears in the system tray.
 2. Open **Settings…** (right-click the icon or double-click). Out of the box, **MyMemory** translates from **Spanish** to **English** with no setup.
 3. To use AI models, switch to OpenRouter, OpenAI, or Gemini in the **Provider** tab and enter your API key.
 4. Select text in any app, press **Ctrl+C** twice quickly, and the translation will be pasted automatically (or shown in the tooltip if the field is read-only).
@@ -89,6 +89,11 @@ Local usage tracking with daily and monthly estimates (characters, approximate t
 
 App version, project link, and copyright.
 
+## What's new in 1.3.1
+
+- **New app icon** — globe design for the tray, executable, and installer
+- **Improved icon loading** — tray icon now reads from the bundled asset instead of a stale embedded copy
+
 ## What's new in 1.3.0
 
 - **Light theme** and **Use Windows setting** to follow the system appearance
@@ -120,10 +125,10 @@ dotnet build
 Requires [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) and [Inno Setup 6](https://jrsoftware.org/isinfo.php).
 
 ```powershell
-.\scripts\build-installer.ps1 -Version 1.3.0
+.\scripts\build-installer.ps1 -Version 1.3.1
 ```
 
-The installer will be at `dist/OpenTranslate-Setup-1.3.0.exe`.
+The installer will be at `dist/OpenTranslate-Setup-1.3.1.exe`.
 
 ### Publish only (no installer)
 
@@ -138,8 +143,8 @@ The executable will be at `src/OpenTranslate/bin/Release/net8.0-windows/win-x64/
 Push a version tag to trigger the release workflow:
 
 ```bash
-git tag v1.3.0
-git push origin v1.3.0
+git tag v1.3.1
+git push origin v1.3.1
 ```
 
 This builds the installer and attaches it to a GitHub Release automatically.

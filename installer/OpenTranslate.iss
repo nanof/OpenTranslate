@@ -10,8 +10,10 @@
 #define MyAppPublisher "OpenTranslate"
 #define MyAppExeName "OpenTranslate.exe"
 #define MyAppUrl "https://github.com/nanof/OpenTranslate"
+#define MyAppIcon "..\src\OpenTranslate\Assets\app.ico"
 
 [Setup]
+SetupIconFile={#MyAppIcon}
 AppId={{A3F8C2E1-9B4D-4F6A-8C7E-1D2E3F4A5B6C}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
