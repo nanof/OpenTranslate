@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Media;
 using System.Windows.Interop;
 using System.Windows.Media.Animation;
 using System.Windows.Threading;
@@ -47,6 +48,7 @@ public partial class TranslationTooltipWindow : Window
 
     private bool _isClosing;
     private bool _closeOnDeactivate = true;
+    private bool _isDragging;
     private bool _isSpinnerCompact;
     private bool _applyingInitialSize;
     private System.Windows.Size? _lastUserSize;
@@ -470,10 +472,67 @@ public partial class TranslationTooltipWindow : Window
 
     private void OnDeactivated(object? sender, EventArgs e)
     {
-        if (_isClosing || !_closeOnDeactivate)
+        if (_isClosing || !_closeOnDeactivate || _isDragging)
             return;
 
         Dispatcher.BeginInvoke(CloseSafely);
+    }
+
+    private void OnRootPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left || e.ButtonState != MouseButtonState.Pressed)
+            return;
+
+        if (IsFromInteractiveControl(e.OriginalSource as DependencyObject))
+            return;
+
+        if (IsInResizeBorder(e.GetPosition(this)))
+            return;
+
+        var previousCloseOnDeactivate = _closeOnDeactivate;
+        _isDragging = true;
+        _closeOnDeactivate = false;
+
+        try
+        {
+            DragMove();
+        }
+        catch (InvalidOperationException)
+        {
+            // Mouse button was released before DragMove could track it.
+        }
+        finally
+        {
+            _isDragging = false;
+            _closeOnDeactivate = previousCloseOnDeactivate;
+        }
+    }
+
+    private bool IsInResizeBorder(System.Windows.Point windowPoint)
+    {
+        if (ResizeMode != ResizeMode.CanResize)
+            return false;
+
+        return windowPoint.X <= ResizeBorderPixels
+            || windowPoint.X >= ActualWidth - ResizeBorderPixels
+            || windowPoint.Y <= ResizeBorderPixels
+            || windowPoint.Y >= ActualHeight - ResizeBorderPixels;
+    }
+
+    private static bool IsFromInteractiveControl(DependencyObject? source)
+    {
+        while (source is not null)
+        {
+            if (source is Button
+                or System.Windows.Controls.TextBox
+                or System.Windows.Controls.Primitives.ScrollBar
+                or System.Windows.Controls.Primitives.Thumb)
+                return true;
+
+            source = VisualTreeHelper.GetParent(source);
+        }
+
+        return false;
     }
 
     public void CloseSafely()

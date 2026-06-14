@@ -149,7 +149,8 @@
             HorizontalAlignment="Stretch"
             VerticalAlignment="Stretch"
             Opacity="0"
-            RenderTransformOrigin="0,0">
+            RenderTransformOrigin="0,0"
+            PreviewMouseLeftButtonDown="OnRootPreviewMouseLeftButtonDown">
         <Border.RenderTransform>
             <TransformGroup>
                 <ScaleTransform x:Name="RootScale"
